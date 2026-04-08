@@ -216,6 +216,7 @@ a { color: var(--c-primary); text-decoration: none; }
 /* Task card actions */
 .task-card__actions { display: flex; gap: 0.25rem; flex-shrink: 0; opacity: 0; transition: var(--transition); }
 .task-card:hover .task-card__actions { opacity: 1; }
+.task-card__delete-desktop { color: var(--c-danger) !important; }
 
 /* ============= EISENHOWER GRID ============= */
 .eisenhower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -325,6 +326,41 @@ a { color: var(--c-primary); text-decoration: none; }
 .intention-banner__icon { font-size: 1.1rem; }
 .intention-banner__label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--c-primary); letter-spacing: 0.05em; }
 .intention-banner__text { font-size: 0.9rem; font-weight: 500; }
+
+/* Focus Nudge Bar */
+.focus-nudge {
+    background: linear-gradient(135deg, var(--c-primary-bg), rgba(91,91,255,0.08));
+    border: 1px solid rgba(91,91,255,0.2); border-radius: var(--radius);
+    padding: 0.7rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;
+    cursor: pointer; transition: var(--transition);
+}
+.focus-nudge:hover { border-color: var(--c-primary); box-shadow: 0 2px 12px rgba(91,91,255,0.15); }
+.focus-nudge__icon { font-size: 1.3rem; }
+.focus-nudge__text { flex: 1; }
+.focus-nudge__title { font-weight: 600; font-size: 0.9rem; color: var(--c-text); }
+.focus-nudge__sub { font-size: 0.78rem; color: var(--c-text-muted); margin-top: 0.1rem; }
+.focus-nudge__arrow { color: var(--c-primary); font-size: 1.1rem; font-weight: 700; }
+.focus-nudge.hidden { display: none; }
+
+/* Task highlight after focus game */
+.task-card.highlight-next {
+    border-color: var(--c-primary); box-shadow: 0 0 0 2px rgba(91,91,255,0.25), 0 4px 16px rgba(91,91,255,0.12);
+    animation: pulse-highlight 2s ease-in-out 3;
+}
+@keyframes pulse-highlight {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(91,91,255,0.25), 0 4px 16px rgba(91,91,255,0.12); }
+    50% { box-shadow: 0 0 0 4px rgba(91,91,255,0.35), 0 4px 20px rgba(91,91,255,0.2); }
+}
+
+/* Swipe-to-delete task card */
+.task-card-wrapper { position: relative; overflow: hidden; border-radius: var(--radius); }
+.task-card-wrapper__delete {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+    background: var(--c-danger); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; font-weight: 600; border-radius: 0 var(--radius) var(--radius) 0;
+}
+.task-card-wrapper .task-card { transition: transform 0.2s ease; position: relative; z-index: 1; }
+@media (min-width: 769px) { .task-card-wrapper__delete { display: none; } }
 
 /* ============= POMODORO ============= */
 .pomodoro-modal { text-align: center; padding: 2rem 1.5rem; }
@@ -455,6 +491,7 @@ a { color: var(--c-primary); text-decoration: none; }
     .task-card__check { width: 24px; height: 24px; border-radius: 7px; }
     .task-card__actions { opacity: 1; } /* Always show on mobile */
     .task-card__actions .btn--sm { padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+    .task-card__delete-desktop { display: none !important; } /* Swipe-to-delete on mobile instead */
 
     /* Eisenhower stacks */
     .eisenhower-grid { grid-template-columns: 1fr; }
@@ -549,6 +586,15 @@ a { color: var(--c-primary); text-decoration: none; }
                     <span class="intention-banner__icon">&#127919;</span>
                     <span class="intention-banner__label">Today's focus:</span>
                     <span class="intention-banner__text" id="intentionText"></span>
+                </div>
+
+                <div class="focus-nudge" id="focusNudge">
+                    <span class="focus-nudge__icon">&#129504;</span>
+                    <div class="focus-nudge__text">
+                        <div class="focus-nudge__title">Struggling to focus?</div>
+                        <div class="focus-nudge__sub">Play a quick brain game to get started</div>
+                    </div>
+                    <span class="focus-nudge__arrow">&#8250;</span>
                 </div>
 
                 <div class="filters" id="filterBar">
@@ -1397,27 +1443,30 @@ class RankedViewRenderer {
         const subtaskDone = t.subtasks ? t.subtasks.filter(s => s.done).length : 0;
         const subtaskTotal = t.subtasks ? t.subtasks.length : 0;
         const subtaskPct = subtaskTotal ? Math.round(subtaskDone / subtaskTotal * 100) : 0;
-        return `<div class="task-card${t.done ? ' done' : ''}" data-id="${t.id}" draggable="${!t.done}">
-            <div class="task-card__check${t.done ? ' done' : ''}" data-action="toggle" data-id="${t.id}">${t.done ? '&#10003;' : ''}</div>
-            <div class="task-card__body">
-                <div class="task-card__title${t.done ? ' done' : ''}">${esc(t.title)}</div>
-                ${t.notes ? `<div class="task-card__notes">${esc(t.notes)}</div>` : ''}
-                <div class="task-card__meta">
-                    <span class="badge badge--score">${score} pts</span>
-                    ${t.category ? `<span class="badge badge--category">${esc(t.category)}</span>` : ''}
-                    ${t.duration ? `<span class="badge badge--duration">${t.duration}m</span>` : ''}
-                    ${t.day ? `<span class="badge badge--day">${t.day}</span>` : ''}
-                    ${t.recurrence ? `<span class="badge badge--recurrence">&#8635; ${t.recurrence.type}</span>` : ''}
-                    ${t.streak && t.streak.current > 0 ? `<span class="badge badge--streak">&#128293; ${t.streak.current}d</span>` : ''}
-                    ${t.pomodoros ? `<span class="badge badge--duration">&#127813; ${t.pomodoros}</span>` : ''}
+        return `<div class="task-card-wrapper" data-id="${t.id}">
+            <div class="task-card-wrapper__delete">&#128465; Delete</div>
+            <div class="task-card${t.done ? ' done' : ''}" data-id="${t.id}" draggable="${!t.done}">
+                <button class="btn btn--ghost btn--sm" data-action="edit" data-id="${t.id}" title="Edit" style="flex-shrink:0;font-size:1rem;padding:0.3rem">&#9998;</button>
+                <div class="task-card__check${t.done ? ' done' : ''}" data-action="toggle" data-id="${t.id}">${t.done ? '&#10003;' : ''}</div>
+                <div class="task-card__body">
+                    <div class="task-card__title${t.done ? ' done' : ''}">${esc(t.title)}</div>
+                    ${t.notes ? `<div class="task-card__notes">${esc(t.notes)}</div>` : ''}
+                    <div class="task-card__meta">
+                        <span class="badge badge--score">${score} pts</span>
+                        ${t.category ? `<span class="badge badge--category">${esc(t.category)}</span>` : ''}
+                        ${t.duration ? `<span class="badge badge--duration">${t.duration}m</span>` : ''}
+                        ${t.day ? `<span class="badge badge--day">${t.day}</span>` : ''}
+                        ${t.recurrence ? `<span class="badge badge--recurrence">&#8635; ${t.recurrence.type}</span>` : ''}
+                        ${t.streak && t.streak.current > 0 ? `<span class="badge badge--streak">&#128293; ${t.streak.current}d</span>` : ''}
+                        ${t.pomodoros ? `<span class="badge badge--duration">&#127813; ${t.pomodoros}</span>` : ''}
+                    </div>
+                    ${subtaskTotal ? `<div class="subtask-bar"><div class="subtask-bar__fill" style="width:${subtaskPct}%"></div></div>` : ''}
                 </div>
-                ${subtaskTotal ? `<div class="subtask-bar"><div class="subtask-bar__fill" style="width:${subtaskPct}%"></div></div>` : ''}
-            </div>
-            <div class="task-card__actions">
-                <button class="btn btn--ghost btn--sm" data-action="focus" data-id="${t.id}" title="Focus">&#127813;</button>
-                <button class="btn btn--ghost btn--sm" data-action="skip" data-id="${t.id}" title="Skip">&#9193;</button>
-                <button class="btn btn--ghost btn--sm" data-action="edit" data-id="${t.id}" title="Edit">&#9998;</button>
-                <button class="btn btn--ghost btn--sm" data-action="delete" data-id="${t.id}" title="Delete">&#128465;</button>
+                <div class="task-card__actions">
+                    <button class="btn btn--ghost btn--sm" data-action="focus" data-id="${t.id}" title="Focus">&#127813;</button>
+                    <button class="btn btn--ghost btn--sm" data-action="skip" data-id="${t.id}" title="Skip">&#9193;</button>
+                    <button class="btn btn--ghost btn--sm task-card__delete-desktop" data-action="delete" data-id="${t.id}" title="Delete">&#128465;</button>
+                </div>
             </div>
         </div>`;
     }
@@ -1435,6 +1484,49 @@ class RankedViewRenderer {
                 else if (action === 'focus') this.bus.emit('ui:startPomodoro', id);
             });
         });
+
+        // Swipe-to-delete
+        this.container.querySelectorAll('.task-card-wrapper').forEach(wrapper => {
+            const card = wrapper.querySelector('.task-card');
+            const id = Number(wrapper.dataset.id);
+            let startX = 0, currentX = 0, swiping = false;
+
+            wrapper.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                currentX = 0;
+                swiping = true;
+                card.style.transition = 'none';
+            }, { passive: true });
+
+            wrapper.addEventListener('touchmove', (e) => {
+                if (!swiping) return;
+                currentX = e.touches[0].clientX - startX;
+                if (currentX > 0) currentX = 0; // only swipe left
+                if (currentX < -100) currentX = -100;
+                if (currentX < -10) e.preventDefault();
+                card.style.transform = `translateX(${currentX}px)`;
+            }, { passive: false });
+
+            const endSwipe = () => {
+                if (!swiping) return;
+                swiping = false;
+                card.style.transition = 'transform 0.2s ease';
+                if (currentX < -60) {
+                    card.style.transform = 'translateX(-100%)';
+                    setTimeout(() => { this.tm.delete(id); }, 200);
+                } else {
+                    card.style.transform = 'translateX(0)';
+                }
+            };
+            wrapper.addEventListener('touchend', endSwipe);
+            wrapper.addEventListener('touchcancel', endSwipe);
+
+            // Desktop: click delete background
+            wrapper.querySelector('.task-card-wrapper__delete').addEventListener('click', () => {
+                if (confirm('Delete this task?')) this.tm.delete(id);
+            });
+        });
+
         // Drag and drop
         this.container.querySelectorAll('.task-card[draggable="true"]').forEach(card => {
             card.addEventListener('dragstart', (e) => {
@@ -1810,6 +1902,7 @@ class PriorityFlowApp {
         // Buttons
         document.getElementById('addTaskBtn').addEventListener('click', () => this._showTaskModal());
         document.getElementById('focusGameBtn').addEventListener('click', () => this._showFocusGames());
+        document.getElementById('focusNudge').addEventListener('click', () => this._showFocusGames());
         document.getElementById('reviewBtn').addEventListener('click', () => this._showReviewModal());
         document.getElementById('settingsBtn').addEventListener('click', () => this._showSettingsModal());
         document.getElementById('themeBtn').addEventListener('click', () => this.theme.toggle());
@@ -2496,6 +2589,23 @@ class PriorityFlowApp {
     }
 
     // ============= FOCUS GAMES =============
+    _onFocusGameComplete(msg) {
+        this.modals.closeCurrent();
+        this.motivational.toast(msg, 'success');
+        // Hide the nudge bar
+        const nudge = document.getElementById('focusNudge');
+        if (nudge) nudge.classList.add('hidden');
+        // Highlight the top undone task
+        setTimeout(() => {
+            const topCard = document.querySelector('.task-card-wrapper .task-card:not(.done)');
+            if (topCard) {
+                topCard.classList.add('highlight-next');
+                topCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => topCard.classList.remove('highlight-next'), 6500);
+            }
+        }, 300);
+    }
+
     _showFocusGames() {
         this.modals.open((overlay) => {
             overlay.innerHTML = `<div class="modal" style="max-width:440px">
@@ -2574,9 +2684,13 @@ class PriorityFlowApp {
                 area.innerHTML = '';
                 const dot = document.createElement('div');
                 const size = 30 + Math.random() * 20;
+                const areaW = area.clientWidth || 300;
+                const areaH = area.clientHeight || 260;
+                const maxX = Math.max(0, areaW - size);
+                const maxY = Math.max(0, areaH - size);
                 dot.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:var(--c-primary);position:absolute;cursor:pointer;transition:transform 0.1s;box-shadow:0 2px 8px var(--c-shadow)`;
-                dot.style.left = Math.random() * (area.offsetWidth - size) + 'px';
-                dot.style.top = Math.random() * (area.offsetHeight - size) + 'px';
+                dot.style.left = Math.random() * maxX + 'px';
+                dot.style.top = Math.random() * maxY + 'px';
                 area.appendChild(dot);
 
                 dot.addEventListener('click', () => {
@@ -2590,15 +2704,14 @@ class PriorityFlowApp {
                         area.innerHTML = '';
                         resultEl.innerHTML = `<div class="game-result"><div class="game-result__time">${elapsed}s</div><div class="game-result__label">Brain activated! Now go crush a task.</div><button class="btn btn--primary" style="margin-top:1rem" id="dotDone">Let's go!</button></div>`;
                         resultEl.querySelector('#dotDone').addEventListener('click', () => {
-                            this.modals.closeCurrent();
-                            this.motivational.toast('Brain warmed up! Time to focus.', 'success');
+                            this._onFocusGameComplete('Brain warmed up! Time to focus.');
                         });
                     } else {
                         dotTimeout = setTimeout(spawnDot, 80);
                     }
                 });
             };
-            spawnDot();
+            requestAnimationFrame(() => spawnDot()); // defer so area has layout dimensions
 
             return () => clearTimeout(dotTimeout);
         });
@@ -2678,8 +2791,7 @@ class PriorityFlowApp {
                     const msg = wins >= 3 ? 'Sharp reflexes! You\'re ready to focus.' : 'Keep practicing! Let\'s try a task now.';
                     resultEl.innerHTML = `<div class="game-result"><div class="game-result__time">${wins}/${totalRounds} (${pct}%)</div><div class="game-result__label">${msg}</div><button class="btn btn--primary" style="margin-top:1rem" id="captureDone">Let's go!</button></div>`;
                     resultEl.querySelector('#captureDone').addEventListener('click', () => {
-                        this.modals.closeCurrent();
-                        this.motivational.toast('Reflexes sharpened! Time to work.', 'success');
+                        this._onFocusGameComplete('Reflexes sharpened! Time to work.');
                     });
                     return;
                 }
@@ -2770,8 +2882,7 @@ class PriorityFlowApp {
                     const rating = reactionMs < 250 ? 'Lightning fast!' : reactionMs < 400 ? 'Great reflexes!' : 'Good reaction!';
                     resultEl.innerHTML = `<div class="game-result"><div class="game-result__time">${reactionMs}ms</div><div class="game-result__label">${rating} Brain is firing.</div><button class="btn btn--primary" style="margin-top:1rem" id="f1Done">Start working!</button></div>`;
                     resultEl.querySelector('#f1Done').addEventListener('click', () => {
-                        this.modals.closeCurrent();
-                        this.motivational.toast(`${reactionMs}ms reaction! You're locked in. Go!`, 'success');
+                        this._onFocusGameComplete(`${reactionMs}ms reaction! You're locked in. Go!`);
                     });
                 }
             });
