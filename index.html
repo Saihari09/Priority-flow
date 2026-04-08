@@ -2850,81 +2850,84 @@
 
                 const syncStatus = document.getElementById('syncStatus');
                 const syncDot = syncStatus.querySelector('.sync-dot');
+                const syncLabel = syncStatus.querySelector('span');
 
                 syncDot.className = 'sync-dot syncing';
+                if (syncLabel) syncLabel.textContent = 'Syncing…';
+
+                const authHeader = {'Authorization': `token ${token}`, 'Content-Type': 'application/json'};
+
+                const apiFetch = async (url, opts = {}) => {
+                    const r = await fetch(url, {...opts, headers: {...authHeader, ...(opts.headers || {})}});
+                    if (!r.ok) {
+                        const body = await r.json().catch(() => ({}));
+                        throw new Error(`GitHub API ${r.status}: ${body.message || r.statusText}`);
+                    }
+                    return r.json();
+                };
 
                 try {
                     let gistId = localStorage.getItem('priorityflow.gist.id');
 
-                    if (!gistId) {
-                        const gists = await fetch('https://api.github.com/user/gists', {
-                            headers: {'Authorization': `token ${token}`}
-                        }).then(r => r.json());
-
-                        const priorityFlowGist = gists.find(g => g.description === 'priorityflow-sync.json');
-                        if (priorityFlowGist) {
-                            gistId = priorityFlowGist.id;
-                            localStorage.setItem('priorityflow.gist.id', gistId);
+                    if (!gistId || gistId === 'undefined') {
+                        const gists = await apiFetch('https://api.github.com/user/gists?per_page=100');
+                        const found = gists.find(g => g.files && g.files['priorityflow.json']);
+                        if (found) {
+                            gistId = found.id;
                         } else {
-                            const newGist = await fetch('https://api.github.com/user/gists', {
+                            const created = await apiFetch('https://api.github.com/gists', {
                                 method: 'POST',
-                                headers: {
-                                    'Authorization': `token ${token}`,
-                                    'Content-Type': 'application/json'
-                                },
                                 body: JSON.stringify({
-                                    description: 'priorityflow-sync.json',
+                                    description: 'PriorityFlow sync',
                                     public: false,
-                                    files: {
-                                        'priorityflow.json': {
-                                            content: JSON.stringify({tasks: this.tasks, lastModified: Date.now()})
-                                        }
-                                    }
+                                    files: {'priorityflow.json': {content: JSON.stringify({tasks: this.tasks, lastModified: this.lastModified})}}
                                 })
-                            }).then(r => r.json());
+                            });
+                            gistId = created.id;
+                        }
+                        localStorage.setItem('priorityflow.gist.id', gistId);
+                    }
 
-                            gistId = newGist.id;
-                            localStorage.setItem('priorityflow.gist.id', gistId);
+                    const gistData = await apiFetch(`https://api.github.com/gists/${gistId}`);
+                    const fileEntry = gistData.files && gistData.files['priorityflow.json'];
+
+                    if (!fileEntry) {
+                        // File missing from gist — push current tasks
+                        await apiFetch(`https://api.github.com/gists/${gistId}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({files: {'priorityflow.json': {content: JSON.stringify({tasks: this.tasks, lastModified: this.lastModified})}}})
+                        });
+                    } else {
+                        const remoteData = JSON.parse(fileEntry.content);
+                        const localTs = this.lastModified || 0;
+                        const remoteTs = remoteData.lastModified || 0;
+
+                        if (remoteTs > localTs) {
+                            this.tasks = remoteData.tasks;
+                            this.lastModified = remoteTs;
+                            localStorage.setItem('priorityflow.lastModified', remoteTs);
+                            localStorage.setItem('priorityflow.tasks.v5', JSON.stringify(this.tasks));
+                            this.renderAllViews();
+                            if (syncLabel) syncLabel.textContent = 'Pulled ✓';
+                        } else if (localTs >= remoteTs) {
+                            await apiFetch(`https://api.github.com/gists/${gistId}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({files: {'priorityflow.json': {content: JSON.stringify({tasks: this.tasks, lastModified: localTs})}}})
+                            });
+                            if (syncLabel) syncLabel.textContent = 'Pushed ✓';
                         }
                     }
 
-                    const gistData = await fetch(`https://api.github.com/gists/${gistId}`, {
-                        headers: {'Authorization': `token ${token}`}
-                    }).then(r => r.json());
-
-                    const remoteContent = gistData.files['priorityflow.json'].content;
-                    const remoteData = JSON.parse(remoteContent);
-
-                    const localData = {tasks: this.tasks, lastModified: this.lastModified};
-
-                    if (!remoteData.lastModified || remoteData.lastModified < localData.lastModified) {
-                        await fetch(`https://api.github.com/gists/${gistId}`, {
-                            method: 'PATCH',
-                            headers: {
-                                'Authorization': `token ${token}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                files: {
-                                    'priorityflow.json': {
-                                        content: JSON.stringify(localData)
-                                    }
-                                }
-                            })
-                        });
-                    } else if (remoteData.lastModified > localData.lastModified) {
-                        this.tasks = remoteData.tasks;
-                        this.saveTasks();
-                        this.renderAllViews();
-                    }
-
                     syncDot.className = 'sync-dot connected';
+                    setTimeout(() => { if (syncLabel) syncLabel.textContent = 'Sync'; }, 2000);
                 } catch (err) {
                     console.error('Sync error:', err);
                     syncDot.className = 'sync-dot error';
+                    if (syncLabel) syncLabel.textContent = err.message.includes('401') ? 'Bad token' : 'Sync failed';
                     setTimeout(() => {
                         syncDot.className = 'sync-dot';
-                    }, 3000);
+                        if (syncLabel) syncLabel.textContent = 'Sync';
+                    }, 4000);
                 }
             }
 
