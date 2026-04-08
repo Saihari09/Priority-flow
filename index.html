@@ -234,6 +234,7 @@ a { color: var(--c-primary); text-decoration: none; }
 .planner-slot--past { opacity: 0.4; }
 .planner-slot--now { background: var(--c-primary-bg); border-radius: var(--radius-xs); padding: 0.35rem 0.5rem; border-bottom-color: var(--c-primary); position: relative; }
 .planner-slot--now .planner-slot__time { color: var(--c-primary); font-weight: 700; }
+.planner-slot.drag-over { background: var(--c-primary-bg); border-radius: var(--radius-xs); }
 .planner-slot__time { width: 60px; font-size: 0.8rem; font-weight: 600; color: var(--c-text-muted); padding-top: 0.25rem; flex-shrink: 0; }
 .planner-slot__task { flex: 1; min-height: 32px; border-radius: var(--radius-xs); padding: 0.25rem 0.5rem; font-size: 0.85rem; }
 .planner-slot__task.has-task { background: var(--c-primary-bg); color: var(--c-primary); font-weight: 500; cursor: pointer; }
@@ -632,6 +633,7 @@ class TaskManager {
             interest: Number(data.interest) || 2,
             day: data.day || 'Today',
             duration: Number(data.duration) || 30,
+            scheduledTime: data.scheduledTime || null,
             done: false,
             completedAt: null,
             createdAt: new Date().toISOString(),
@@ -1406,6 +1408,13 @@ class PlannerViewRenderer {
         this.bus = bus;
         this.tm = taskManager;
         this.container = document.getElementById('plannerView');
+        this._draggedId = null;
+    }
+
+    _timeToSlotKey(t) {
+        // "HH:MM" -> round down to nearest 30min slot
+        const [h, m] = t.split(':').map(Number);
+        return `${String(h).padStart(2, '0')}:${m < 30 ? '00' : '30'}`;
     }
 
     render() {
@@ -1415,9 +1424,9 @@ class PlannerViewRenderer {
         const currentMin = now.getMinutes();
         const currentSlotKey = `${String(currentHour).padStart(2, '0')}:${currentMin < 30 ? '00' : '30'}`;
 
-        // Build all slots 6:00–22:30
+        // Build all slots 5:00–23:30
         const slots = [];
-        for (let h = 6; h <= 22; h++) {
+        for (let h = 5; h <= 23; h++) {
             for (let m = 0; m < 60; m += 30) {
                 const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                 const isPast = h < currentHour || (h === currentHour && m < currentMin);
@@ -1426,12 +1435,21 @@ class PlannerViewRenderer {
             }
         }
 
-        // Auto-assign tasks starting from the current slot (or next available)
+        // First pass: place tasks with a scheduledTime into their pinned slot
+        const scheduled = todayTasks.filter(t => t.scheduledTime);
+        const unscheduled = todayTasks.filter(t => !t.scheduledTime);
+
+        scheduled.forEach(task => {
+            const key = this._timeToSlotKey(task.scheduledTime);
+            const slot = slots.find(s => s.time === key && !s.task);
+            if (slot) slot.task = task;
+        });
+
+        // Second pass: auto-assign unscheduled tasks into empty slots from now
         const startIdx = Math.max(0, slots.findIndex(s => !s.isPast));
         let slotIdx = startIdx;
-        todayTasks.forEach(task => {
+        unscheduled.forEach(task => {
             const slotsNeeded = Math.max(1, Math.ceil((task.duration || 30) / 30));
-            // Find next empty slot from slotIdx onwards
             while (slotIdx < slots.length && slots[slotIdx].task) slotIdx++;
             if (slotIdx < slots.length) {
                 slots[slotIdx].task = task;
@@ -1439,22 +1457,63 @@ class PlannerViewRenderer {
             }
         });
 
+        // Calculate end time for tasks
+        const taskEndTime = (slotTime, duration) => {
+            const [h, m] = slotTime.split(':').map(Number);
+            const total = h * 60 + m + (duration || 30);
+            return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+        };
+
         this.container.innerHTML = `<div class="planner-grid">${slots.map(s =>
-            `<div class="planner-slot${s.isCurrent ? ' planner-slot--now' : ''}${s.isPast ? ' planner-slot--past' : ''}" ${s.isCurrent ? 'id="plannerNow"' : ''}>
+            `<div class="planner-slot${s.isCurrent ? ' planner-slot--now' : ''}${s.isPast ? ' planner-slot--past' : ''}" data-time="${s.time}" ${s.isCurrent ? 'id="plannerNow"' : ''}>
                 <div class="planner-slot__time">${s.time}</div>
-                <div class="planner-slot__task ${s.task ? 'has-task' : 'empty'}" ${s.task ? `data-id="${s.task.id}"` : ''}>
-                    ${s.task ? esc(s.task.title) : (s.isCurrent ? 'Now' : '')}
+                <div class="planner-slot__task ${s.task ? 'has-task' : 'empty'}" ${s.task ? `data-id="${s.task.id}" draggable="true"` : ''}>
+                    ${s.task ? `${esc(s.task.title)} <span style="opacity:0.6;font-size:0.75rem;margin-left:0.35rem">${s.task.duration}m \u2192 ${taskEndTime(s.time, s.task.duration)}</span>` : (s.isCurrent ? 'Now' : '')}
                 </div>
             </div>`
         ).join('')}</div>`;
 
-        this.container.querySelectorAll('.planner-slot__task[data-id]').forEach(el => {
-            el.addEventListener('click', () => this.bus.emit('ui:editTask', Number(el.dataset.id)));
-        });
+        this._attachEvents();
 
         // Scroll to current time
         const nowEl = document.getElementById('plannerNow');
         if (nowEl) nowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    _attachEvents() {
+        // Click to edit
+        this.container.querySelectorAll('.planner-slot__task[data-id]').forEach(el => {
+            el.addEventListener('click', () => this.bus.emit('ui:editTask', Number(el.dataset.id)));
+        });
+
+        // Drag tasks between slots
+        this.container.querySelectorAll('.planner-slot__task[draggable]').forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                this._draggedId = Number(el.dataset.id);
+                el.closest('.planner-slot').style.opacity = '0.4';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            el.addEventListener('dragend', () => {
+                this.container.querySelectorAll('.planner-slot').forEach(s => { s.style.opacity = ''; s.classList.remove('drag-over'); });
+                this._draggedId = null;
+            });
+        });
+
+        // Drop zones: all slots
+        this.container.querySelectorAll('.planner-slot').forEach(slot => {
+            slot.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; slot.classList.add('drag-over'); });
+            slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                if (this._draggedId === null) return;
+                const task = this.tm.getById(this._draggedId);
+                if (!task) return;
+                const newTime = slot.dataset.time;
+                task.scheduledTime = newTime;
+                this.tm.save();
+            });
+        });
     }
 }
 
@@ -1859,11 +1918,18 @@ class PriorityFlowApp {
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Duration (min)</label>
+                            <label class="form-label">Duration</label>
                             <select class="form-select" id="taskDuration">
-                                ${[15, 30, 45, 60, 90, 120].map(d => `<option value="${d}"${isEdit && task.duration === d ? ' selected' : ''}>${d}m</option>`).join('')}
+                                ${[5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240].map(d => `<option value="${d}"${isEdit && task.duration === d ? ' selected' : ''}>${d >= 60 ? (d / 60) + 'h' : d + 'm'}</option>`).join('')}
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Scheduled time</label>
+                            <input type="time" class="form-input" id="taskScheduledTime" value="${isEdit && task.scheduledTime ? task.scheduledTime : ''}">
+                            <div class="form-hint">Optional — pins task to this slot in Planner</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Recurrence</label>
                             <select class="form-select" id="taskRecurrence">
@@ -1871,6 +1937,7 @@ class PriorityFlowApp {
                                 ${['daily', 'weekly', 'weekdays'].map(r => `<option value="${r}"${isEdit && task.recurrence?.type === r ? ' selected' : ''}>${r}</option>`).join('')}
                             </select>
                         </div>
+                        <div class="form-group"></div>
                     </div>
                     <div class="sidebar__label" style="margin-top:0.75rem;margin-bottom:0.5rem">Priority Scores</div>
                     <div class="form-row">
@@ -1947,6 +2014,7 @@ class PriorityFlowApp {
                     category: modal.querySelector('#taskCategory').value,
                     day: modal.querySelector('#taskDay').value,
                     duration: Number(modal.querySelector('#taskDuration').value),
+                    scheduledTime: modal.querySelector('#taskScheduledTime').value || null,
                     urgency: Number(modal.querySelector('#taskUrgency').value),
                     impact: Number(modal.querySelector('#taskImpact').value),
                     energy: Number(modal.querySelector('#taskEnergy').value),
