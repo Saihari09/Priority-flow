@@ -229,8 +229,11 @@ a { color: var(--c-primary); text-decoration: none; }
 .planner-grid { display: flex; flex-direction: column; gap: 0.25rem; }
 .planner-slot {
     display: flex; align-items: stretch; gap: 0.5rem; padding: 0.35rem 0;
-    border-bottom: 1px solid var(--c-border);
+    border-bottom: 1px solid var(--c-border); transition: var(--transition);
 }
+.planner-slot--past { opacity: 0.4; }
+.planner-slot--now { background: var(--c-primary-bg); border-radius: var(--radius-xs); padding: 0.35rem 0.5rem; border-bottom-color: var(--c-primary); position: relative; }
+.planner-slot--now .planner-slot__time { color: var(--c-primary); font-weight: 700; }
 .planner-slot__time { width: 60px; font-size: 0.8rem; font-weight: 600; color: var(--c-text-muted); padding-top: 0.25rem; flex-shrink: 0; }
 .planner-slot__task { flex: 1; min-height: 32px; border-radius: var(--radius-xs); padding: 0.25rem 0.5rem; font-size: 0.85rem; }
 .planner-slot__task.has-task { background: var(--c-primary-bg); color: var(--c-primary); font-weight: 500; cursor: pointer; }
@@ -1407,16 +1410,29 @@ class PlannerViewRenderer {
 
     render() {
         const todayTasks = this.tm.sorted(this.tm.tasks.filter(t => t.day === 'Today' && !t.done));
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+        const currentSlotKey = `${String(currentHour).padStart(2, '0')}:${currentMin < 30 ? '00' : '30'}`;
+
+        // Build all slots 6:00–22:30
         const slots = [];
         for (let h = 6; h <= 22; h++) {
             for (let m = 0; m < 60; m += 30) {
-                slots.push({ time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`, task: null });
+                const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                const isPast = h < currentHour || (h === currentHour && m < currentMin);
+                const isCurrent = time === currentSlotKey;
+                slots.push({ time, task: null, isPast, isCurrent });
             }
         }
-        // Auto-assign tasks to slots
-        let slotIdx = 0;
+
+        // Auto-assign tasks starting from the current slot (or next available)
+        const startIdx = Math.max(0, slots.findIndex(s => !s.isPast));
+        let slotIdx = startIdx;
         todayTasks.forEach(task => {
             const slotsNeeded = Math.max(1, Math.ceil((task.duration || 30) / 30));
+            // Find next empty slot from slotIdx onwards
+            while (slotIdx < slots.length && slots[slotIdx].task) slotIdx++;
             if (slotIdx < slots.length) {
                 slots[slotIdx].task = task;
                 slotIdx += slotsNeeded;
@@ -1424,10 +1440,10 @@ class PlannerViewRenderer {
         });
 
         this.container.innerHTML = `<div class="planner-grid">${slots.map(s =>
-            `<div class="planner-slot">
+            `<div class="planner-slot${s.isCurrent ? ' planner-slot--now' : ''}${s.isPast ? ' planner-slot--past' : ''}" ${s.isCurrent ? 'id="plannerNow"' : ''}>
                 <div class="planner-slot__time">${s.time}</div>
                 <div class="planner-slot__task ${s.task ? 'has-task' : 'empty'}" ${s.task ? `data-id="${s.task.id}"` : ''}>
-                    ${s.task ? esc(s.task.title) : ''}
+                    ${s.task ? esc(s.task.title) : (s.isCurrent ? 'Now' : '')}
                 </div>
             </div>`
         ).join('')}</div>`;
@@ -1435,6 +1451,10 @@ class PlannerViewRenderer {
         this.container.querySelectorAll('.planner-slot__task[data-id]').forEach(el => {
             el.addEventListener('click', () => this.bus.emit('ui:editTask', Number(el.dataset.id)));
         });
+
+        // Scroll to current time
+        const nowEl = document.getElementById('plannerNow');
+        if (nowEl) nowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 
