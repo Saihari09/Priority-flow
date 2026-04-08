@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>PriorityFlow — Task Scheduler</title>
+    <!-- PWA / Homescreen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PriorityFlow">
+    <meta name="theme-color" content="#5B5BFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0F0F1E" media="(prefers-color-scheme: dark)">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%235B5BFF' width='100' height='100' rx='22'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white'>P</text></svg>">
+    <link rel="manifest" href="manifest.json">
     <link href="https://api.fontshare.com/css?f[]=satoshi@400,500,600,700&f[]=cabinet-grotesk@500,600,700" rel="stylesheet">
     <style>
 /* ============= ROOT & VARIABLES ============= */
@@ -344,16 +352,100 @@ a { color: var(--c-primary); text-decoration: none; }
 .empty-state__icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
 .empty-state__text { font-size: 0.95rem; }
 
+/* ============= BOTTOM NAV (mobile) ============= */
+.bottom-nav {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--c-bg); border-top: 1px solid var(--c-border);
+    padding: 0.35rem 0; padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+    z-index: 900; justify-content: space-around; align-items: center;
+}
+.bottom-nav__item {
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    font-size: 0.65rem; font-weight: 600; color: var(--c-text-muted); padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-xs); transition: var(--transition); -webkit-tap-highlight-color: transparent;
+}
+.bottom-nav__item.active { color: var(--c-primary); }
+.bottom-nav__icon { font-size: 1.25rem; line-height: 1; }
+
+/* FAB (mobile) */
+.fab {
+    display: none; position: fixed; bottom: 80px; right: 1rem;
+    width: 52px; height: 52px; border-radius: 50%; background: var(--c-primary);
+    color: #fff; font-size: 1.5rem; font-weight: 300;
+    box-shadow: 0 4px 16px rgba(91,91,255,0.4); z-index: 950;
+    align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+}
+.fab:active { transform: scale(0.92); }
+
+/* ============= PWA SAFE AREAS ============= */
+@supports (padding: env(safe-area-inset-top)) {
+    .topbar { padding-top: max(0.75rem, env(safe-area-inset-top)); }
+}
+
 /* ============= RESPONSIVE ============= */
 @media (max-width: 768px) {
-    .app { flex-direction: column; }
-    .sidebar { width: 100%; min-width: 100%; flex-direction: row; overflow-x: auto; padding: 0.75rem; gap: 1rem; max-height: 140px; }
-    .sidebar__section { min-width: 200px; }
-    .topbar { flex-wrap: wrap; padding: 0.5rem 1rem; }
-    .topbar__search { width: 100%; order: 10; }
+    html { -webkit-text-size-adjust: 100%; }
+    .app { flex-direction: column; height: 100vh; height: 100dvh; }
+
+    /* Hide desktop sidebar */
+    .sidebar { display: none; }
+
+    /* Show bottom nav + FAB */
+    .bottom-nav { display: flex; }
+    .fab { display: flex; }
+
+    /* Compact topbar */
+    .topbar {
+        padding: 0.5rem 1rem; gap: 0.5rem; flex-wrap: nowrap;
+        position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px);
+        background: color-mix(in srgb, var(--c-bg) 85%, transparent);
+    }
+    .topbar__brand { font-size: 1.1rem; }
+    .topbar__tabs { display: none; } /* Replaced by bottom nav */
+    .topbar__spacer { display: none; }
+    .topbar__search { flex: 1; min-width: 0; width: auto; font-size: 0.85rem; padding: 0.4rem 0.65rem; }
+    #addTaskBtn { display: none; } /* Replaced by FAB */
+    .topbar__actions { gap: 0.35rem; }
+
+    /* Content with bottom padding for nav */
+    .content { padding: 0.75rem; padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+    .main { min-height: 0; flex: 1; }
+
+    /* Filters: scrollable row */
+    .filters { flex-wrap: nowrap; overflow-x: auto; gap: 0.5rem; padding-bottom: 0.25rem; -webkit-overflow-scrolling: touch; }
+    .filter-btn { white-space: nowrap; flex-shrink: 0; padding: 0.4rem 0.85rem; }
+
+    /* Larger tap targets for task cards */
+    .task-card { padding: 0.75rem; gap: 0.65rem; }
+    .task-card__check { width: 24px; height: 24px; border-radius: 7px; }
+    .task-card__actions { opacity: 1; } /* Always show on mobile */
+    .task-card__actions .btn--sm { padding: 0.4rem 0.5rem; font-size: 0.85rem; }
+
+    /* Eisenhower stacks */
     .eisenhower-grid { grid-template-columns: 1fr; }
+
+    /* Form adjustments */
     .form-row { grid-template-columns: 1fr; }
-    .content { padding: 1rem; }
+    .modal { width: 100%; max-width: 100%; max-height: 100vh; max-height: 100dvh; border-radius: 0; }
+    .modal-overlay { align-items: flex-end; }
+    .modal { border-radius: var(--radius) var(--radius) 0 0; max-height: 92vh; max-height: 92dvh; }
+
+    /* Planner compact */
+    .planner-slot__time { width: 50px; font-size: 0.75rem; }
+
+    /* Overview cards */
+    .overview-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .stat-card { padding: 0.85rem; }
+    .stat-card__value { font-size: 1.5rem; }
+
+    /* Morning flow mobile */
+    .morning { padding: 1.5rem 1rem; }
+    .morning__greeting { font-size: 1.5rem; }
+    .mood-btn { width: 44px; height: 44px; font-size: 1.3rem; }
+
+    /* Intention banner compact */
+    .intention-banner { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
 }
     </style>
 </head>
@@ -434,6 +526,16 @@ a { color: var(--c-primary); text-decoration: none; }
             </div>
         </main>
     </div>
+
+    <!-- Bottom Nav (mobile) -->
+    <nav class="bottom-nav" id="bottomNav">
+        <button class="bottom-nav__item active" data-view="ranked"><span class="bottom-nav__icon">&#9776;</span>Ranked</button>
+        <button class="bottom-nav__item" data-view="eisenhower"><span class="bottom-nav__icon">&#9638;</span>Matrix</button>
+        <button class="bottom-nav__item" data-view="planner"><span class="bottom-nav__icon">&#128197;</span>Planner</button>
+        <button class="bottom-nav__item" data-view="overview"><span class="bottom-nav__icon">&#128200;</span>Overview</button>
+        <button class="bottom-nav__item" data-view="more" id="mobileMoreBtn"><span class="bottom-nav__icon">&#8943;</span>More</button>
+    </nav>
+    <button class="fab" id="mobileFab">+</button>
 
     <div id="modalRoot"></div>
     <div class="toast-container" id="toastRoot"></div>
@@ -1468,6 +1570,55 @@ class PriorityFlowApp {
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
             if (e.key === 'n' || e.key === 'N') { e.preventDefault(); this._showTaskModal(); }
+        });
+
+        // Mobile: FAB
+        document.getElementById('mobileFab').addEventListener('click', () => this._showTaskModal());
+
+        // Mobile: Bottom nav
+        document.getElementById('bottomNav').addEventListener('click', (e) => {
+            const item = e.target.closest('[data-view]');
+            if (!item) return;
+            const view = item.dataset.view;
+            if (view === 'more') {
+                this._showMobileMoreMenu();
+                return;
+            }
+            this.currentView = view;
+            document.querySelectorAll('.bottom-nav__item').forEach(i => i.classList.toggle('active', i.dataset.view === view));
+            document.querySelectorAll('.topbar__tab').forEach(t => t.classList.toggle('active', t.dataset.view === this.currentView));
+            document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === this.currentView + 'View'));
+            this._renderCurrentView();
+        });
+    }
+
+    _showMobileMoreMenu() {
+        this.modals.open((overlay) => {
+            const stats = this.tm.todayStats();
+            const username = this.store.get('pf.github.username', '');
+            const avatar = this.store.get('pf.github.avatar', '');
+            overlay.innerHTML = `<div class="modal" style="max-width:100%">
+                <div class="modal__header">
+                    <div style="display:flex;align-items:center;gap:0.75rem">
+                        <div class="sidebar__avatar" style="width:32px;height:32px;font-size:0.8rem">${avatar ? `<img src="${esc(avatar)}">` : (username ? username.charAt(0).toUpperCase() : '?')}</div>
+                        <div>
+                            <div style="font-weight:600;font-size:0.9rem">${esc(username) || 'PriorityFlow'}</div>
+                            <div style="font-size:0.75rem;color:var(--c-text-muted)">${stats.done}/${stats.total} tasks today</div>
+                        </div>
+                    </div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body" style="display:flex;flex-direction:column;gap:0.25rem;padding:0.75rem">
+                    <button class="btn btn--secondary" id="moreReview" style="width:100%;justify-content:flex-start">&#128203; Daily Review</button>
+                    <button class="btn btn--secondary" id="moreSettings" style="width:100%;justify-content:flex-start">&#9881; Settings & Sync</button>
+                    <button class="btn btn--secondary" id="moreTheme" style="width:100%;justify-content:flex-start">&#9790; Toggle Theme</button>
+                </div>
+            </div>`;
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            overlay.querySelector('#moreReview').addEventListener('click', () => { this.modals.closeCurrent(); this._showReviewModal(); });
+            overlay.querySelector('#moreSettings').addEventListener('click', () => { this.modals.closeCurrent(); this._showSettingsModal(); });
+            overlay.querySelector('#moreTheme').addEventListener('click', () => { this.theme.toggle(); this.modals.closeCurrent(); });
+            return null;
         });
     }
 
