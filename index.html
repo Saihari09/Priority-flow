@@ -784,7 +784,7 @@ class GitHubSyncManager {
 
     syncDebounced() {
         clearTimeout(this._debounceTimer);
-        this._debounceTimer = setTimeout(() => this.sync(), 3000);
+        this._debounceTimer = setTimeout(() => this.sync().catch(() => {}), 3000);
     }
 
     async sync() {
@@ -793,7 +793,7 @@ class GitHubSyncManager {
         try {
             let gistId = this.gistId;
             if (!gistId || gistId === 'undefined') {
-                const gists = await this._apiFetch('https://api.github.com/user/gists?per_page=100');
+                const gists = await this._apiFetch('https://api.github.com/gists?per_page=100');
                 const found = gists.find(g => g.files && g.files['priorityflow.json']);
                 if (found) {
                     gistId = found.id;
@@ -844,7 +844,9 @@ class GitHubSyncManager {
             }
         } catch (err) {
             console.error('Sync error:', err);
-            this.bus.emit('sync:status', { state: 'error', text: err.message.includes('token') ? 'Bad token' : 'Sync failed' });
+            const msg = err.message.includes('token') ? 'Bad token' : 'Sync failed';
+            this.bus.emit('sync:status', { state: 'error', text: msg });
+            throw err; // Re-throw so connect() can catch it
         }
     }
 
@@ -1413,7 +1415,7 @@ class PriorityFlowApp {
         this._setupListeners();
         this._renderAll();
         this._checkMorning();
-        this.sync.fetchUser().then(() => this.sync.sync());
+        this.sync.fetchUser().then(() => this.sync.sync().catch(() => {}));
         this._updateUserUI();
 
         // Debounced sync on task change
@@ -1459,7 +1461,7 @@ class PriorityFlowApp {
         document.getElementById('themeBtn').addEventListener('click', () => this.theme.toggle());
         document.getElementById('syncStatus').addEventListener('click', () => {
             if (!this.sync.token) this._showSettingsModal();
-            else this.sync.sync();
+            else this.sync.sync().catch(() => {});
         });
 
         // Keyboard shortcuts
