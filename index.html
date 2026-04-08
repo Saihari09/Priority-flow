@@ -117,6 +117,13 @@ a { color: var(--c-primary); text-decoration: none; }
 .habit-item__streak { font-weight: 700; color: var(--c-warning); font-size: 0.8rem; margin-left: auto; }
 
 /* Sidebar: Review Dots */
+/* Sidebar: Weekly Streak */
+.weekly-streak { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; background: var(--c-surface-hover); border-radius: var(--radius-sm); }
+.weekly-streak__flame { font-size: 1.5rem; }
+.weekly-streak__count { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--c-warning); }
+.weekly-streak__label { font-size: 0.75rem; color: var(--c-text-muted); }
+.weekly-streak__best { font-size: 0.7rem; color: var(--c-text-muted); margin-left: auto; }
+
 .review-dots { display: flex; gap: 0.35rem; padding: 0.25rem; }
 .review-dot {
     width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--c-border);
@@ -331,6 +338,29 @@ a { color: var(--c-primary); text-decoration: none; }
 .pomodoro-task-title { font-weight: 600; margin-bottom: 0.5rem; }
 .pomodoro-stats { font-size: 0.85rem; color: var(--c-text-muted); margin-bottom: 1.25rem; }
 
+/* ============= FOCUS GAMES ============= */
+.game-area { width: 100%; position: relative; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.game-canvas { width: 100%; border-radius: var(--radius-sm); background: var(--c-surface); border: 1px solid var(--c-border); display: block; }
+.game-score { text-align: center; font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--c-primary); margin: 0.5rem 0; }
+.game-instruction { text-align: center; font-size: 0.85rem; color: var(--c-text-muted); margin-bottom: 0.75rem; }
+.game-result { text-align: center; padding: 1rem; }
+.game-result__time { font-family: var(--font-display); font-size: 2.5rem; font-weight: 700; color: var(--c-success); }
+.game-result__label { font-size: 0.9rem; color: var(--c-text-muted); margin-top: 0.25rem; }
+.game-picker { display: flex; flex-direction: column; gap: 0.5rem; }
+.game-picker__item {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
+    cursor: pointer; transition: var(--transition);
+}
+.game-picker__item:hover { border-color: var(--c-primary); background: var(--c-primary-bg); }
+.game-picker__icon { font-size: 1.5rem; }
+.game-picker__info { flex: 1; }
+.game-picker__name { font-weight: 600; font-size: 0.95rem; }
+.game-picker__desc { font-size: 0.8rem; color: var(--c-text-muted); }
+.f1-light { width: 36px; height: 36px; border-radius: 50%; background: var(--c-border); transition: background 0.15s; }
+.f1-light.on { background: var(--c-danger); }
+.f1-light.go { background: var(--c-success); }
+
 /* ============= TOAST ============= */
 .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 3000; display: flex; flex-direction: column-reverse; gap: 0.5rem; pointer-events: none; }
 .toast {
@@ -481,6 +511,12 @@ a { color: var(--c-primary); text-decoration: none; }
                 <div id="habitList"></div>
             </div>
 
+            <!-- Weekly Streak -->
+            <div class="sidebar__section">
+                <div class="sidebar__label">Weekly Streak</div>
+                <div id="weeklyStreak"></div>
+            </div>
+
             <!-- Review Dots -->
             <div class="sidebar__section">
                 <div class="sidebar__label">This Week</div>
@@ -501,6 +537,7 @@ a { color: var(--c-primary); text-decoration: none; }
                 <input type="search" class="topbar__search" id="searchInput" placeholder="Search tasks...">
                 <div class="topbar__actions">
                     <button class="btn btn--primary btn--sm" id="addTaskBtn">+ Task</button>
+                    <button class="btn--icon" id="focusGameBtn" title="Struggling to focus?" style="font-size:1.2rem">&#129504;</button>
                     <button class="btn--icon" id="reviewBtn" title="Daily Review">&#128203;</button>
                     <button class="btn--icon" id="settingsBtn" title="Settings">&#9881;</button>
                     <button class="btn--icon" id="themeBtn" title="Toggle theme">&#9790;</button>
@@ -699,8 +736,19 @@ class TaskManager {
     skip(id) {
         const task = this.getById(id);
         if (!task) return;
-        if (task.day === 'Today') task.day = 'Tomorrow';
-        else if (task.day === 'Tomorrow') task.day = 'This week';
+        if (task.recurrence) {
+            // For recurring tasks: mark this instance done (skipped) and create next
+            task.done = true;
+            task.completedAt = new Date().toISOString();
+            task.skipped = true;
+            // Break streak since we skipped
+            if (task.streak) task.streak.current = 0;
+            this.createNextOccurrence(task);
+        } else {
+            // Non-recurring: move to later
+            if (task.day === 'Today') task.day = 'Tomorrow';
+            else if (task.day === 'Tomorrow') task.day = 'This week';
+        }
         this.save();
     }
 
@@ -738,17 +786,17 @@ class TaskManager {
     }
 
     score(task) {
-        let s = (task.urgency || 2) + (task.impact || 2) + (task.energy || 2) + (task.interest || 2);
-        if (task.day === 'Today') s += 2;
+        let s = (task.urgency || 3) + (task.impact || 3) + (task.energy || 3) + (task.interest || 3);
+        if (task.day === 'Today') s += 3;
         if (task.day === 'Tomorrow') s += 1;
         return s;
     }
 
     quadrant(task) {
-        const u = task.urgency || 2, i = task.impact || 2;
-        if (u >= 2 && i >= 2) return 'do';
-        if (u < 2 && i >= 2) return 'schedule';
-        if (u >= 2 && i < 2) return 'delegate';
+        const u = task.urgency || 3, i = task.impact || 3;
+        if (u >= 3 && i >= 3) return 'do';
+        if (u < 3 && i >= 3) return 'schedule';
+        if (u >= 3 && i < 3) return 'delegate';
         return 'eliminate';
     }
 
@@ -1246,6 +1294,81 @@ class MotivationalEngine {
     }
 }
 
+// ============= TOUCH DRAG HELPER =============
+// HTML5 drag-and-drop doesn't work on touch devices. This provides equivalent touch support.
+const TouchDrag = {
+    // Makes elements draggable via touch. Options:
+    //   items: selector for draggable elements (must have data-id)
+    //   container: parent element
+    //   onDrop(draggedId, target): called when dropped on a target element or zone
+    //   dropZones: selector for drop zones (if different from items)
+    //   getClone(el): optional, returns clone element for drag ghost
+    setup(container, { items, dropZones, onDrop }) {
+        let dragEl = null, ghost = null, dragId = null, startX, startY, moved = false;
+
+        container.querySelectorAll(items).forEach(el => {
+            el.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                const touch = e.touches[0];
+                startX = touch.clientX;
+                startY = touch.clientY;
+                moved = false;
+                dragEl = el;
+                dragId = el.dataset.id ? Number(el.dataset.id) : el.dataset.time || null;
+            }, { passive: true });
+        });
+
+        container.addEventListener('touchmove', (e) => {
+            if (!dragEl) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - startX, dy = touch.clientY - startY;
+            if (!moved && Math.abs(dx) + Math.abs(dy) < 10) return;
+            if (!moved) {
+                moved = true;
+                ghost = dragEl.cloneNode(true);
+                ghost.style.cssText = `position:fixed;pointer-events:none;z-index:9999;opacity:0.85;width:${dragEl.offsetWidth}px;transform:scale(0.95);box-shadow:0 8px 24px rgba(0,0,0,0.2);border-radius:8px;`;
+                document.body.appendChild(ghost);
+                dragEl.style.opacity = '0.3';
+            }
+            e.preventDefault();
+            ghost.style.left = (touch.clientX - dragEl.offsetWidth / 2) + 'px';
+            ghost.style.top = (touch.clientY - 20) + 'px';
+
+            // Highlight drop zone under finger
+            const dropSelector = dropZones || items;
+            container.querySelectorAll(dropSelector).forEach(z => z.classList.remove('drag-over'));
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (target) {
+                const zone = target.closest(dropSelector);
+                if (zone && container.contains(zone)) zone.classList.add('drag-over');
+            }
+        }, { passive: false });
+
+        const endDrag = (e) => {
+            if (!dragEl) return;
+            if (ghost) { ghost.remove(); ghost = null; }
+            dragEl.style.opacity = '';
+            const dropSelector = dropZones || items;
+            container.querySelectorAll(dropSelector).forEach(z => z.classList.remove('drag-over'));
+
+            if (moved && e.changedTouches) {
+                const touch = e.changedTouches[0];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (target) {
+                    const zone = target.closest(dropSelector);
+                    if (zone && container.contains(zone)) {
+                        onDrop(dragId, zone);
+                    }
+                }
+            }
+            dragEl = null; dragId = null; moved = false;
+        };
+
+        container.addEventListener('touchend', endDrag);
+        container.addEventListener('touchcancel', endDrag);
+    }
+};
+
 // ============= VIEW RENDERERS =============
 
 // --- Ranked View ---
@@ -1337,6 +1460,24 @@ class RankedViewRenderer {
                 this.tm.save();
             });
         });
+
+        // Touch drag support for mobile
+        TouchDrag.setup(this.container, {
+            items: '.task-card[draggable="true"]',
+            onDrop: (draggedId, targetEl) => {
+                const targetId = Number(targetEl.dataset.id);
+                if (!draggedId || draggedId === targetId) return;
+                const dragged = this.tm.getById(draggedId);
+                const target = this.tm.getById(targetId);
+                if (!dragged || !target || dragged.done || target.done) return;
+                const cards = [...this.container.querySelectorAll('.task-card')];
+                const dragIdx = cards.findIndex(c => Number(c.dataset.id) === draggedId);
+                const targetIdx = cards.findIndex(c => Number(c.dataset.id) === targetId);
+                dragged.manualRank = targetIdx;
+                target.manualRank = dragIdx;
+                this.tm.save();
+            }
+        });
     }
 }
 
@@ -1398,6 +1539,22 @@ class EisenhowerViewRenderer {
                 this.tm.save();
                 dragId = null;
             });
+        });
+
+        // Touch drag support for mobile
+        TouchDrag.setup(this.container, {
+            items: '.task-card[draggable]',
+            dropZones: '.quadrant',
+            onDrop: (draggedId, quadEl) => {
+                const task = this.tm.getById(draggedId);
+                if (!task) return;
+                const q = quadEl.dataset.quadrant;
+                if (q === 'do') { task.urgency = 3; task.impact = 3; }
+                else if (q === 'schedule') { task.urgency = 1; task.impact = 3; }
+                else if (q === 'delegate') { task.urgency = 3; task.impact = 1; }
+                else { task.urgency = 1; task.impact = 1; }
+                this.tm.save();
+            }
         });
     }
 }
@@ -1513,6 +1670,21 @@ class PlannerViewRenderer {
                 task.scheduledTime = newTime;
                 this.tm.save();
             });
+        });
+
+        // Touch drag support for mobile
+        TouchDrag.setup(this.container, {
+            items: '.planner-slot__task[draggable]',
+            dropZones: '.planner-slot',
+            onDrop: (draggedId, slotEl) => {
+                const task = this.tm.getById(draggedId);
+                if (!task) return;
+                const newTime = slotEl.dataset.time;
+                if (newTime) {
+                    task.scheduledTime = newTime;
+                    this.tm.save();
+                }
+            }
         });
     }
 }
@@ -1637,6 +1809,7 @@ class PriorityFlowApp {
 
         // Buttons
         document.getElementById('addTaskBtn').addEventListener('click', () => this._showTaskModal());
+        document.getElementById('focusGameBtn').addEventListener('click', () => this._showFocusGames());
         document.getElementById('reviewBtn').addEventListener('click', () => this._showReviewModal());
         document.getElementById('settingsBtn').addEventListener('click', () => this._showSettingsModal());
         document.getElementById('themeBtn').addEventListener('click', () => this.theme.toggle());
@@ -1688,12 +1861,14 @@ class PriorityFlowApp {
                     <button class="btn--icon modal-close">&times;</button>
                 </div>
                 <div class="modal__body" style="display:flex;flex-direction:column;gap:0.25rem;padding:0.75rem">
+                    <button class="btn btn--secondary" id="moreFocus" style="width:100%;justify-content:flex-start">&#129504; Struggling to Focus?</button>
                     <button class="btn btn--secondary" id="moreReview" style="width:100%;justify-content:flex-start">&#128203; Daily Review</button>
                     <button class="btn btn--secondary" id="moreSettings" style="width:100%;justify-content:flex-start">&#9881; Settings & Sync</button>
                     <button class="btn btn--secondary" id="moreTheme" style="width:100%;justify-content:flex-start">&#9790; Toggle Theme</button>
                 </div>
             </div>`;
             overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            overlay.querySelector('#moreFocus').addEventListener('click', () => { this.modals.closeCurrent(); this._showFocusGames(); });
             overlay.querySelector('#moreReview').addEventListener('click', () => { this.modals.closeCurrent(); this._showReviewModal(); });
             overlay.querySelector('#moreSettings').addEventListener('click', () => { this.modals.closeCurrent(); this._showSettingsModal(); });
             overlay.querySelector('#moreTheme').addEventListener('click', () => { this.theme.toggle(); this.modals.closeCurrent(); });
@@ -1705,6 +1880,7 @@ class PriorityFlowApp {
         this._renderCurrentView();
         this._renderKeyTasks();
         this._renderHabits();
+        this._renderWeeklyStreak();
         this._renderReviewDots();
         this._updateIntention();
     }
@@ -1755,6 +1931,35 @@ class PriorityFlowApp {
             <span>${esc(h.title)}</span>
             <span class="habit-item__streak">&#128293; ${h.streak?.current || 0}d</span>
         </div>`).join('');
+    }
+
+    _renderWeeklyStreak() {
+        // Count consecutive days (going backwards from today) where at least 1 task was completed
+        const el = document.getElementById('weeklyStreak');
+        let streak = 0;
+        const d = new Date();
+        for (let i = 0; i < 365; i++) {
+            const key = getDateStr(d);
+            const completed = this.tm.tasks.some(t => t.completedAt && t.completedAt.startsWith(key) && !t.skipped);
+            if (i === 0 && !completed) { /* today is ok to not have completions yet */ }
+            else if (!completed) break;
+            else streak++;
+            d.setDate(d.getDate() - 1);
+        }
+        // Best streak from storage
+        const stored = this.store.get('pf.weeklyStreak', { current: 0, best: 0 });
+        if (streak > stored.best) stored.best = streak;
+        stored.current = streak;
+        this.store.set('pf.weeklyStreak', stored);
+
+        el.innerHTML = `<div class="weekly-streak">
+            <span class="weekly-streak__flame">&#128293;</span>
+            <div>
+                <div class="weekly-streak__count">${streak} day${streak !== 1 ? 's' : ''}</div>
+                <div class="weekly-streak__label">completion streak</div>
+            </div>
+            <div class="weekly-streak__best">Best: ${stored.best}d</div>
+        </div>`;
     }
 
     _renderReviewDots() {
@@ -1939,25 +2144,25 @@ class PriorityFlowApp {
                         </div>
                         <div class="form-group"></div>
                     </div>
-                    <div class="sidebar__label" style="margin-top:0.75rem;margin-bottom:0.5rem">Priority Scores</div>
+                    <div class="sidebar__label" style="margin-top:0.75rem;margin-bottom:0.5rem">Priority Scores <span style="font-weight:400;text-transform:none;letter-spacing:0">(1 = lowest, 5 = highest)</span></div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Urgency (1-3)</label>
-                            <input type="range" class="form-range" id="taskUrgency" min="1" max="3" value="${isEdit ? task.urgency : 2}">
+                            <label class="form-label">Urgency: <strong id="urgVal">${isEdit ? task.urgency : 3}</strong></label>
+                            <input type="range" class="form-range" id="taskUrgency" min="1" max="5" value="${isEdit ? task.urgency : 3}">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Impact (1-3)</label>
-                            <input type="range" class="form-range" id="taskImpact" min="1" max="3" value="${isEdit ? task.impact : 2}">
+                            <label class="form-label">Impact: <strong id="impVal">${isEdit ? task.impact : 3}</strong></label>
+                            <input type="range" class="form-range" id="taskImpact" min="1" max="5" value="${isEdit ? task.impact : 3}">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Energy (1-3)</label>
-                            <input type="range" class="form-range" id="taskEnergy" min="1" max="3" value="${isEdit ? task.energy : 2}">
+                            <label class="form-label">Energy needed: <strong id="engVal">${isEdit ? task.energy : 3}</strong></label>
+                            <input type="range" class="form-range" id="taskEnergy" min="1" max="5" value="${isEdit ? task.energy : 3}">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Interest (1-3)</label>
-                            <input type="range" class="form-range" id="taskInterest" min="1" max="3" value="${isEdit ? task.interest : 2}">
+                            <label class="form-label">Interest: <strong id="intVal">${isEdit ? task.interest : 3}</strong></label>
+                            <input type="range" class="form-range" id="taskInterest" min="1" max="5" value="${isEdit ? task.interest : 3}">
                         </div>
                     </div>
                     <div class="form-group">
@@ -2037,6 +2242,12 @@ class PriorityFlowApp {
             });
 
             // Focus title on open
+            // Live slider values
+            ['taskUrgency:urgVal', 'taskImpact:impVal', 'taskEnergy:engVal', 'taskInterest:intVal'].forEach(pair => {
+                const [sid, vid] = pair.split(':');
+                modal.querySelector('#' + sid).addEventListener('input', (e) => { modal.querySelector('#' + vid).textContent = e.target.value; });
+            });
+
             setTimeout(() => modal.querySelector('#taskTitle').focus(), 100);
 
             return null; // no cleanup needed
@@ -2281,6 +2492,291 @@ class PriorityFlowApp {
             });
 
             return null;
+        });
+    }
+
+    // ============= FOCUS GAMES =============
+    _showFocusGames() {
+        this.modals.open((overlay) => {
+            overlay.innerHTML = `<div class="modal" style="max-width:440px">
+                <div class="modal__header">
+                    <div class="modal__title">&#129504; Struggling to focus?</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body">
+                    <p style="font-size:0.85rem;color:var(--c-text-muted);margin-bottom:1rem">Play a quick brain game to activate your focus, then tackle your task!</p>
+                    <div class="game-picker">
+                        <div class="game-picker__item" data-game="dots">
+                            <span class="game-picker__icon">&#127919;</span>
+                            <div class="game-picker__info">
+                                <div class="game-picker__name">Dot Blitz</div>
+                                <div class="game-picker__desc">Tap random dots as fast as you can to wake up your brain</div>
+                            </div>
+                        </div>
+                        <div class="game-picker__item" data-game="capture">
+                            <span class="game-picker__icon">&#127912;</span>
+                            <div class="game-picker__info">
+                                <div class="game-picker__name">Capture the Shape</div>
+                                <div class="game-picker__desc">Stop a moving image inside the target zone</div>
+                            </div>
+                        </div>
+                        <div class="game-picker__item" data-game="f1">
+                            <span class="game-picker__icon">&#128998;</span>
+                            <div class="game-picker__info">
+                                <div class="game-picker__name">F1 Reaction</div>
+                                <div class="game-picker__desc">Wait for the lights to go out, then tap — how fast are you?</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            overlay.querySelectorAll('[data-game]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this.modals.closeCurrent();
+                    const game = btn.dataset.game;
+                    if (game === 'dots') this._gameDots();
+                    else if (game === 'capture') this._gameCapture();
+                    else if (game === 'f1') this._gameF1();
+                });
+            });
+            return null;
+        });
+    }
+
+    // --- Game 1: Dot Blitz ---
+    _gameDots() {
+        const TOTAL = 15;
+        let tapped = 0;
+        let startTime = null;
+        let dotTimeout = null;
+
+        this.modals.open((overlay) => {
+            overlay.innerHTML = `<div class="modal" style="max-width:440px">
+                <div class="modal__header">
+                    <div class="modal__title">&#127919; Dot Blitz</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body">
+                    <div class="game-instruction">Tap ${TOTAL} dots as fast as you can!</div>
+                    <div class="game-score"><span id="dotCount">0</span> / ${TOTAL}</div>
+                    <div class="game-area" style="height:300px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);position:relative;overflow:hidden" id="dotArea"></div>
+                    <div id="dotResult"></div>
+                </div>
+            </div>`;
+
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            const area = overlay.querySelector('#dotArea');
+            const countEl = overlay.querySelector('#dotCount');
+            const resultEl = overlay.querySelector('#dotResult');
+
+            const spawnDot = () => {
+                area.innerHTML = '';
+                const dot = document.createElement('div');
+                const size = 30 + Math.random() * 20;
+                dot.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:var(--c-primary);position:absolute;cursor:pointer;transition:transform 0.1s;box-shadow:0 2px 8px var(--c-shadow)`;
+                dot.style.left = Math.random() * (area.offsetWidth - size) + 'px';
+                dot.style.top = Math.random() * (area.offsetHeight - size) + 'px';
+                area.appendChild(dot);
+
+                dot.addEventListener('click', () => {
+                    if (!startTime) startTime = Date.now();
+                    tapped++;
+                    countEl.textContent = tapped;
+                    dot.style.transform = 'scale(0)';
+                    if (tapped >= TOTAL) {
+                        clearTimeout(dotTimeout);
+                        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+                        area.innerHTML = '';
+                        resultEl.innerHTML = `<div class="game-result"><div class="game-result__time">${elapsed}s</div><div class="game-result__label">Brain activated! Now go crush a task.</div><button class="btn btn--primary" style="margin-top:1rem" id="dotDone">Let's go!</button></div>`;
+                        resultEl.querySelector('#dotDone').addEventListener('click', () => {
+                            this.modals.closeCurrent();
+                            this.motivational.toast('Brain warmed up! Time to focus.', 'success');
+                        });
+                    } else {
+                        dotTimeout = setTimeout(spawnDot, 80);
+                    }
+                });
+            };
+            spawnDot();
+
+            return () => clearTimeout(dotTimeout);
+        });
+    }
+
+    // --- Game 2: Capture the Shape ---
+    _gameCapture() {
+        let animFrame = null;
+        this.modals.open((overlay) => {
+            overlay.innerHTML = `<div class="modal" style="max-width:440px">
+                <div class="modal__header">
+                    <div class="modal__title">&#127912; Capture the Shape</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body">
+                    <div class="game-instruction">Tap when the moving circle is inside the target zone!</div>
+                    <div class="game-area" style="height:200px;position:relative;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);overflow:hidden;cursor:pointer" id="captureArea">
+                        <div id="captureZone" style="position:absolute;width:80px;height:100%;background:var(--c-success-bg);border-left:2px solid var(--c-success);border-right:2px solid var(--c-success)"></div>
+                        <div id="captureCircle" style="position:absolute;top:50%;width:32px;height:32px;border-radius:50%;background:var(--c-primary);transform:translateY(-50%);box-shadow:0 2px 8px var(--c-shadow)"></div>
+                    </div>
+                    <div id="captureResult" style="margin-top:0.5rem"></div>
+                </div>
+            </div>`;
+
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            const area = overlay.querySelector('#captureArea');
+            const circle = overlay.querySelector('#captureCircle');
+            const zone = overlay.querySelector('#captureZone');
+            const resultEl = overlay.querySelector('#captureResult');
+
+            // Random zone position
+            const areaW = 400;
+            const zoneLeft = 100 + Math.random() * 200;
+            zone.style.left = zoneLeft + 'px';
+
+            let x = 0, speed = 3, round = 0, wins = 0;
+            let curZoneLeft = zoneLeft;
+            const totalRounds = 5;
+            let gameOver = false;
+
+            const animate = () => {
+                x += speed;
+                if (x > areaW - 32 || x < 0) speed = -speed;
+                circle.style.left = x + 'px';
+                // Real-time feedback: turn circle green when inside zone
+                const cc = x + 16;
+                if (cc >= curZoneLeft && cc <= curZoneLeft + 80) {
+                    circle.style.background = 'var(--c-success)';
+                } else {
+                    circle.style.background = 'var(--c-primary)';
+                }
+                animFrame = requestAnimationFrame(animate);
+            };
+            animate();
+
+            area.addEventListener('click', () => {
+                if (gameOver) return;
+                const circleCenter = x + 16;
+                const inZone = circleCenter >= curZoneLeft && circleCenter <= curZoneLeft + 80;
+                round++;
+                if (inZone) {
+                    wins++;
+                    circle.style.background = 'var(--c-success)';
+                    circle.style.boxShadow = '0 0 16px var(--c-success)';
+                } else {
+                    circle.style.background = 'var(--c-danger)';
+                    circle.style.boxShadow = '0 0 16px var(--c-danger)';
+                }
+                setTimeout(() => { circle.style.boxShadow = '0 2px 8px var(--c-shadow)'; }, 400);
+
+                resultEl.innerHTML = `<div style="text-align:center;font-size:0.85rem;color:var(--c-text-muted)">Round ${round}/${totalRounds} — ${wins} captured</div>`;
+
+                if (round >= totalRounds) {
+                    gameOver = true;
+                    cancelAnimationFrame(animFrame);
+                    const pct = Math.round(wins / totalRounds * 100);
+                    const msg = wins >= 3 ? 'Sharp reflexes! You\'re ready to focus.' : 'Keep practicing! Let\'s try a task now.';
+                    resultEl.innerHTML = `<div class="game-result"><div class="game-result__time">${wins}/${totalRounds} (${pct}%)</div><div class="game-result__label">${msg}</div><button class="btn btn--primary" style="margin-top:1rem" id="captureDone">Let's go!</button></div>`;
+                    resultEl.querySelector('#captureDone').addEventListener('click', () => {
+                        this.modals.closeCurrent();
+                        this.motivational.toast('Reflexes sharpened! Time to work.', 'success');
+                    });
+                    return;
+                }
+
+                // Move zone for next round
+                curZoneLeft = 80 + Math.random() * 240;
+                zone.style.left = curZoneLeft + 'px';
+                speed = speed > 0 ? speed + 0.5 : speed - 0.5; // gets faster
+            });
+
+            return () => cancelAnimationFrame(animFrame);
+        });
+    }
+
+    // --- Game 3: F1 Reaction ---
+    _gameF1() {
+        let lightTimeout = null;
+        let goTimeout = null;
+        let startMs = 0;
+        let state = 'waiting'; // waiting, lights, go, done, early
+
+        this.modals.open((overlay) => {
+            overlay.innerHTML = `<div class="modal" style="max-width:440px">
+                <div class="modal__header">
+                    <div class="modal__title">&#128998; F1 Reaction</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body" style="text-align:center">
+                    <div class="game-instruction" id="f1Instruction">Watch the lights...</div>
+                    <div style="display:flex;gap:0.75rem;justify-content:center;margin:1.5rem 0" id="f1Lights">
+                        <div class="f1-light" id="f1L1"></div>
+                        <div class="f1-light" id="f1L2"></div>
+                        <div class="f1-light" id="f1L3"></div>
+                        <div class="f1-light" id="f1L4"></div>
+                    </div>
+                    <div id="f1Result"></div>
+                    <div class="game-area" style="height:120px;background:var(--c-surface);border-radius:var(--radius-sm);border:1px solid var(--c-border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-weight:600;color:var(--c-text-muted);font-size:0.9rem" id="f1Tap">
+                        Wait for green, then TAP here!
+                    </div>
+                </div>
+            </div>`;
+
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            const lights = [1,2,3,4].map(i => overlay.querySelector('#f1L' + i));
+            const tapArea = overlay.querySelector('#f1Tap');
+            const instruction = overlay.querySelector('#f1Instruction');
+            const resultEl = overlay.querySelector('#f1Result');
+
+            // Sequence: light up red lights one by one, then all go off = GO
+            state = 'lights';
+            let lightIdx = 0;
+            const lightUp = () => {
+                if (lightIdx < 4) {
+                    lights[lightIdx].classList.add('on');
+                    lightIdx++;
+                    lightTimeout = setTimeout(lightUp, 600 + Math.random() * 400);
+                } else {
+                    // Random delay before GO (1-3s)
+                    goTimeout = setTimeout(() => {
+                        lights.forEach(l => { l.classList.remove('on'); l.classList.add('go'); });
+                        instruction.textContent = 'GO! TAP NOW!';
+                        tapArea.textContent = 'TAP!';
+                        tapArea.style.background = 'var(--c-success-bg)';
+                        state = 'go';
+                        startMs = Date.now();
+                    }, 1000 + Math.random() * 2000);
+                }
+            };
+            lightTimeout = setTimeout(lightUp, 500);
+
+            tapArea.addEventListener('click', () => {
+                if (state === 'lights') {
+                    // Tapped too early
+                    state = 'early';
+                    clearTimeout(lightTimeout);
+                    clearTimeout(goTimeout);
+                    instruction.textContent = 'Too early! Jump start.';
+                    tapArea.style.background = 'var(--c-danger-bg)';
+                    tapArea.textContent = 'Tapped too early!';
+                    resultEl.innerHTML = '<button class="btn btn--secondary" style="margin-top:1rem" id="f1Retry">Try Again</button>';
+                    resultEl.querySelector('#f1Retry').addEventListener('click', () => {
+                        this.modals.closeCurrent();
+                        this._gameF1();
+                    });
+                } else if (state === 'go') {
+                    state = 'done';
+                    const reactionMs = Date.now() - startMs;
+                    const rating = reactionMs < 250 ? 'Lightning fast!' : reactionMs < 400 ? 'Great reflexes!' : 'Good reaction!';
+                    resultEl.innerHTML = `<div class="game-result"><div class="game-result__time">${reactionMs}ms</div><div class="game-result__label">${rating} Brain is firing.</div><button class="btn btn--primary" style="margin-top:1rem" id="f1Done">Start working!</button></div>`;
+                    resultEl.querySelector('#f1Done').addEventListener('click', () => {
+                        this.modals.closeCurrent();
+                        this.motivational.toast(`${reactionMs}ms reaction! You're locked in. Go!`, 'success');
+                    });
+                }
+            });
+
+            return () => { clearTimeout(lightTimeout); clearTimeout(goTimeout); };
         });
     }
 }
