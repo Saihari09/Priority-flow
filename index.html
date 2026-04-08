@@ -443,6 +443,64 @@ a { color: var(--c-primary); text-decoration: none; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(10px); } }
 
+/* ============= COUNTDOWN LAUNCHER ============= */
+.countdown-overlay {
+    position: fixed; inset: 0; z-index: 5000; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+}
+.countdown-number {
+    font-size: 8rem; font-weight: 900; color: #fff; opacity: 0;
+    animation: countPop 0.8s ease forwards;
+}
+.countdown-go {
+    font-size: 4rem; font-weight: 900; color: var(--c-success); opacity: 0;
+    animation: countPop 0.6s ease forwards;
+}
+.countdown-task {
+    color: rgba(255,255,255,0.8); font-size: 1.1rem; font-weight: 500;
+    margin-top: 1rem; text-align: center; max-width: 300px;
+}
+@keyframes countPop {
+    0% { opacity: 0; transform: scale(2.5); }
+    50% { opacity: 1; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Task upcoming notification banner */
+.task-notify {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 3500;
+    background: linear-gradient(135deg, var(--c-primary), #7B61FF); color: #fff;
+    padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;
+    box-shadow: 0 4px 20px rgba(91,91,255,0.3); animation: slideDown 0.4s ease;
+    cursor: pointer;
+}
+.task-notify__icon { font-size: 1.3rem; }
+.task-notify__text { flex: 1; }
+.task-notify__title { font-weight: 700; font-size: 0.9rem; }
+.task-notify__sub { font-size: 0.78rem; opacity: 0.85; }
+.task-notify__action { background: rgba(255,255,255,0.2); border: none; color: #fff; border-radius: var(--radius-sm); padding: 0.4rem 0.8rem; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+.task-notify__action:hover { background: rgba(255,255,255,0.3); }
+.task-notify__close { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.2rem; cursor: pointer; padding: 0.2rem; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+/* Launch bubble */
+.launch-bubble {
+    position: fixed; bottom: 5.5rem; left: 1.25rem; z-index: 2500;
+    width: 48px; height: 48px; border-radius: 50%; background: var(--c-primary);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; box-shadow: 0 4px 16px rgba(91,91,255,0.35);
+    cursor: pointer; transition: var(--transition); border: none;
+    animation: bubblePulse 3s ease-in-out infinite;
+}
+.launch-bubble:hover { transform: scale(1.1); }
+@keyframes bubblePulse {
+    0%, 100% { box-shadow: 0 4px 16px rgba(91,91,255,0.35); }
+    50% { box-shadow: 0 4px 24px rgba(91,91,255,0.55); }
+}
+@media (min-width: 769px) {
+    .launch-bubble { bottom: 1.5rem; left: 1.5rem; }
+}
+
 /* ============= CONFETTI ============= */
 .confetti-canvas { position: fixed; inset: 0; z-index: 4000; pointer-events: none; }
 
@@ -665,6 +723,8 @@ a { color: var(--c-primary); text-decoration: none; }
         <button class="bottom-nav__item" data-view="more" id="mobileMoreBtn"><span class="bottom-nav__icon">&#8943;</span>More</button>
     </nav>
     <button class="fab" id="mobileFab">+</button>
+    <button class="launch-bubble" id="launchBubble" title="Launch into a task!">&#128640;</button>
+    <div id="taskNotifyRoot"></div>
 
     <div id="modalRoot"></div>
     <div class="toast-container" id="toastRoot"></div>
@@ -1961,6 +2021,10 @@ class PriorityFlowApp {
         this.bus.on('ui:startPomodoro', (id) => this._showPomodoroSetup(id));
         this.bus.on('morning:completed', (data) => this._onMorningComplete(data));
         this.bus.on('pomodoro:started', () => this._showPomodoroTimer());
+
+        // Task notification system & auto-launch
+        this._startTaskNotifier();
+        this._checkAutoLaunch();
     }
 
     _setupListeners() {
@@ -2029,6 +2093,9 @@ class PriorityFlowApp {
         };
         document.getElementById('quickAddBtn').addEventListener('click', quickSubmit);
         quickInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); quickSubmit(); } });
+
+        // Launch bubble
+        document.getElementById('launchBubble').addEventListener('click', () => this._launchCountdown());
 
         // Mobile: FAB
         document.getElementById('mobileFab').addEventListener('click', () => this._showTaskModal());
@@ -2717,6 +2784,114 @@ class PriorityFlowApp {
                 setTimeout(() => topCard.classList.remove('highlight-next'), 6500);
             }
         }, 300);
+    }
+
+    // --- Countdown Launcher ---
+    _launchCountdown(task) {
+        if (!task) {
+            // Pick the top undone Today task
+            const todayTasks = this.tm.tasks.filter(t => t.day === 'Today' && !t.done);
+            task = this.tm.sorted(todayTasks)[0];
+        }
+        if (!task) { this.motivational.toast('No tasks to launch! Add one first.', 'warning'); return; }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'countdown-overlay';
+        document.body.appendChild(overlay);
+
+        const steps = [
+            { text: '3', cls: 'countdown-number', delay: 0 },
+            { text: '2', cls: 'countdown-number', delay: 900 },
+            { text: '1', cls: 'countdown-number', delay: 1800 },
+            { text: 'GO!', cls: 'countdown-go', delay: 2700 },
+        ];
+
+        steps.forEach(step => {
+            setTimeout(() => {
+                overlay.innerHTML = `<div class="${step.cls}">${step.text}</div>${step.text === 'GO!' ? `<div class="countdown-task">${esc(task.title)}</div>` : ''}`;
+            }, step.delay);
+        });
+
+        setTimeout(() => {
+            overlay.remove();
+            // Highlight the task
+            const card = document.querySelector(`.task-card-wrapper[data-id="${task.id}"] .task-card`);
+            if (card) {
+                card.classList.add('highlight-next');
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => card.classList.remove('highlight-next'), 6000);
+            }
+            this.motivational.toast(`Time to crush "${task.title}"!`, 'success');
+        }, 3600);
+    }
+
+    // --- Task Start Notification ---
+    _startTaskNotifier() {
+        this._notifiedTasks = new Set();
+        setInterval(() => this._checkUpcomingTasks(), 60 * 1000);
+        // Also check immediately
+        setTimeout(() => this._checkUpcomingTasks(), 5000);
+    }
+
+    _checkUpcomingTasks() {
+        const now = new Date();
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+
+        const todayTasks = this.tm.tasks.filter(t => t.day === 'Today' && !t.done && t.scheduledTime);
+        todayTasks.forEach(task => {
+            const [h, m] = task.scheduledTime.split(':').map(Number);
+            const taskMin = h * 60 + m;
+            const diff = taskMin - nowMin;
+
+            // Notify 5 minutes before (or if within 0-5 min window and not yet notified)
+            if (diff >= 0 && diff <= 5 && !this._notifiedTasks.has(task.id)) {
+                this._notifiedTasks.add(task.id);
+                this._showTaskNotification(task, diff);
+            }
+        });
+    }
+
+    _showTaskNotification(task, minsAway) {
+        const root = document.getElementById('taskNotifyRoot');
+        const timeText = minsAway <= 0 ? 'Starting now!' : `Starts in ${minsAway} min`;
+        root.innerHTML = `<div class="task-notify" id="taskNotify">
+            <span class="task-notify__icon">&#9200;</span>
+            <div class="task-notify__text">
+                <div class="task-notify__title">${esc(task.title)}</div>
+                <div class="task-notify__sub">${timeText} \u2022 ${task.duration}m \u2022 ${task.scheduledTime}</div>
+            </div>
+            <button class="task-notify__action" id="notifyLaunch">Launch</button>
+            <button class="task-notify__close" id="notifyClose">&times;</button>
+        </div>`;
+
+        document.getElementById('notifyLaunch').addEventListener('click', () => {
+            root.innerHTML = '';
+            this._launchCountdown(task);
+        });
+        document.getElementById('notifyClose').addEventListener('click', () => {
+            root.innerHTML = '';
+        });
+
+        // Auto-dismiss after 30 seconds
+        setTimeout(() => { if (document.getElementById('taskNotify')) root.innerHTML = ''; }, 30000);
+    }
+
+    // --- Auto-launch on load ---
+    _checkAutoLaunch() {
+        // Show countdown prompt if there are 3+ undone today tasks and morning is done
+        const todayTasks = this.tm.tasks.filter(t => t.day === 'Today' && !t.done);
+        const morningDone = this.store.get('pf.morning', null);
+        if (todayTasks.length >= 3 && morningDone) {
+            // Delay to let the UI settle
+            setTimeout(() => {
+                const top = this.tm.sorted(todayTasks)[0];
+                if (!top) return;
+                this.motivational.toast(`${todayTasks.length} tasks today — ready to launch?`, 'success');
+                // Pulse the launch bubble
+                const bubble = document.getElementById('launchBubble');
+                if (bubble) { bubble.style.animation = 'none'; setTimeout(() => { bubble.style.animation = 'bubblePulse 1s ease-in-out 5'; }, 50); }
+            }, 2000);
+        }
     }
 
     _showFocusGames() {
