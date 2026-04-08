@@ -1482,6 +1482,7 @@
                 this.userGitHub = null;
                 this.morning = null;
                 this.searchQuery = '';
+                this.lastModified = parseInt(localStorage.getItem('priorityflow.lastModified')) || 0;
 
                 this.init();
             }
@@ -1567,7 +1568,13 @@
                 document.getElementById('themeBtn').addEventListener('click', () => this.toggleTheme());
 
                 // Sync status
-                document.getElementById('syncStatus').addEventListener('click', () => this.syncWithGist());
+                document.getElementById('syncStatus').addEventListener('click', () => {
+                    if (!localStorage.getItem('priorityflow.gist.token')) {
+                        this.showSettingsModal();
+                    } else {
+                        this.syncWithGist();
+                    }
+                });
 
                 // Intention banner close
                 const bannerClose = document.getElementById('intentionBannerClose');
@@ -1617,7 +1624,9 @@
             }
 
             saveTasks() {
+                this.lastModified = Date.now();
                 localStorage.setItem('priorityflow.tasks.v5', JSON.stringify(this.tasks));
+                localStorage.setItem('priorityflow.lastModified', this.lastModified);
                 this.syncWithGistDebounced();
             }
 
@@ -2886,7 +2895,7 @@
                     const remoteContent = gistData.files['priorityflow.json'].content;
                     const remoteData = JSON.parse(remoteContent);
 
-                    const localData = {tasks: this.tasks, lastModified: Date.now()};
+                    const localData = {tasks: this.tasks, lastModified: this.lastModified};
 
                     if (!remoteData.lastModified || remoteData.lastModified < localData.lastModified) {
                         await fetch(`https://api.github.com/gists/${gistId}`, {
