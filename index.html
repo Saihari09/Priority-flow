@@ -249,6 +249,8 @@ a { color: var(--c-primary); text-decoration: none; }
 .planner-slot__time { width: 60px; font-size: 0.8rem; font-weight: 600; color: var(--c-text-muted); padding-top: 0.25rem; flex-shrink: 0; }
 .planner-slot__task { flex: 1; min-height: 32px; border-radius: var(--radius-xs); padding: 0.25rem 0.5rem; font-size: 0.85rem; }
 .planner-slot__task.has-task { background: var(--c-primary-bg); color: var(--c-primary); font-weight: 500; cursor: pointer; }
+.planner-slot__task.is-continuation { background: rgba(91,91,255,0.06); border-left: 3px solid var(--c-primary); cursor: default; font-weight: 400; }
+.planner-slot--cont { border-bottom-color: rgba(91,91,255,0.15); }
 .planner-slot__task.empty { border: 1px dashed var(--c-border); color: var(--c-text-muted); font-size: 0.8rem; display: flex; align-items: center; }
 
 /* ============= OVERVIEW VIEW ============= */
@@ -344,6 +346,34 @@ a { color: var(--c-primary); text-decoration: none; }
 .focus-nudge__sub { font-size: 0.78rem; color: var(--c-text-muted); margin-top: 0.1rem; }
 .focus-nudge__arrow { color: var(--c-primary); font-size: 1.1rem; font-weight: 700; }
 .focus-nudge.hidden { display: none; }
+
+/* Quick Add Todo Bar */
+.quick-add {
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;
+    background: var(--c-surface); border: 1.5px dashed var(--c-border); border-radius: var(--radius);
+    padding: 0.55rem 0.75rem; transition: var(--transition);
+}
+.quick-add:focus-within { border-color: var(--c-primary); border-style: solid; box-shadow: 0 0 0 2px rgba(91,91,255,0.12); }
+.quick-add__icon { font-size: 1rem; color: var(--c-text-muted); flex-shrink: 0; }
+.quick-add__input {
+    flex: 1; border: none; background: transparent; font: inherit; font-size: 0.9rem;
+    color: var(--c-text); outline: none; min-width: 0;
+}
+.quick-add__input::placeholder { color: var(--c-text-muted); }
+.quick-add__extras { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+.quick-add__time {
+    border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 0.2rem 0.4rem;
+    font-size: 0.75rem; background: transparent; color: var(--c-text); outline: none; width: 90px;
+}
+.quick-add__time::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
+.quick-add__submit {
+    background: var(--c-primary); color: #fff; border: none; border-radius: var(--radius-sm);
+    padding: 0.3rem 0.6rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.quick-add__submit:hover { opacity: 0.9; }
+
+/* Todo badge */
+.badge--todo { background: rgba(91,91,255,0.1); color: var(--c-primary); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 
 /* Task highlight after focus game */
 .task-card.highlight-next {
@@ -607,6 +637,15 @@ a { color: var(--c-primary); text-decoration: none; }
                     <button class="filter-btn" data-filter="done">Done</button>
                 </div>
 
+                <div class="quick-add" id="quickAdd">
+                    <span class="quick-add__icon">&#9998;</span>
+                    <input class="quick-add__input" id="quickAddInput" type="text" placeholder="Quick add a todo..." autocomplete="off">
+                    <div class="quick-add__extras">
+                        <input class="quick-add__time" id="quickAddTime" type="time" title="Schedule time (optional)">
+                        <button class="quick-add__submit" id="quickAddBtn">Add</button>
+                    </div>
+                </div>
+
                 <div class="view active" id="rankedView">
                     <div class="task-list" id="rankedList"></div>
                 </div>
@@ -708,17 +747,19 @@ class TaskManager {
     }
 
     create(data) {
+        const isTodo = data.type === 'todo';
         const task = {
             id: IdGenerator.next(),
+            type: data.type || 'task',
             title: (data.title || '').trim(),
             notes: (data.notes || '').trim(),
             category: data.category || '',
-            urgency: Number(data.urgency) || 2,
-            impact: Number(data.impact) || 2,
-            energy: Number(data.energy) || 2,
-            interest: Number(data.interest) || 2,
+            urgency: Number(data.urgency) || (isTodo ? 2 : 2),
+            impact: Number(data.impact) || (isTodo ? 1 : 2),
+            energy: Number(data.energy) || (isTodo ? 1 : 2),
+            interest: Number(data.interest) || (isTodo ? 1 : 2),
             day: data.day || 'Today',
-            duration: Number(data.duration) || 30,
+            duration: Number(data.duration) || (isTodo ? 10 : 30),
             scheduledTime: data.scheduledTime || null,
             done: false,
             completedAt: null,
@@ -1257,7 +1298,15 @@ class MotivationalEngine {
     _onComplete(task) {
         const msgs = ['Nice work!', 'One down, keep going!', 'Task crushed!', "That's how it's done!", 'You\'re making progress!'];
         const todayMsgs = ['Key task done! You\'re on track.', 'Today\'s priorities are shrinking!'];
-        if (task.streak && task.streak.current >= 7) {
+        const todoMsgs = ['Quick win! Now tackle the big one.', 'Todo done — momentum building!', 'Checked off! Keep the flow going.'];
+        if (task.type === 'todo') {
+            this.toast(todoMsgs[Math.floor(Math.random() * todoMsgs.length)], 'success');
+            // Focus boost: highlight next top task
+            setTimeout(() => {
+                const topCard = document.querySelector('.task-card-wrapper .task-card:not(.done)');
+                if (topCard) { topCard.classList.add('highlight-next'); topCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => topCard.classList.remove('highlight-next'), 5000); }
+            }, 400);
+        } else if (task.streak && task.streak.current >= 7) {
             this.toast(`${task.streak.current}-day streak! You're building a real habit.`, 'success');
         } else if (task.day === 'Today') {
             this.toast(todayMsgs[Math.floor(Math.random() * todayMsgs.length)], 'success');
@@ -1455,10 +1504,12 @@ class RankedViewRenderer {
                     <div class="task-card__title${t.done ? ' done' : ''}">${esc(t.title)}</div>
                     ${t.notes ? `<div class="task-card__notes">${esc(t.notes)}</div>` : ''}
                     <div class="task-card__meta">
+                        ${t.type === 'todo' ? '<span class="badge badge--todo">todo</span>' : ''}
                         <span class="badge badge--score">${score} pts</span>
                         ${t.category ? `<span class="badge badge--category">${esc(t.category)}</span>` : ''}
                         ${t.duration ? `<span class="badge badge--duration">${t.duration}m</span>` : ''}
                         ${t.day ? `<span class="badge badge--day">${t.day}</span>` : ''}
+                        ${t.scheduledTime ? `<span class="badge badge--duration">&#128339; ${t.scheduledTime}</span>` : ''}
                         ${t.recurrence ? `<span class="badge badge--recurrence">&#8635; ${t.recurrence.type}</span>` : ''}
                         ${t.streak && t.streak.current > 0 ? `<span class="badge badge--streak">&#128293; ${t.streak.current}d</span>` : ''}
                         ${t.pomodoros ? `<span class="badge badge--duration">&#127813; ${t.pomodoros}</span>` : ''}
@@ -1692,14 +1743,30 @@ class PlannerViewRenderer {
             }
         }
 
-        // First pass: place tasks with a scheduledTime into their pinned slot
+        // Helper: fill slots for a task's full duration
+        const fillSlots = (startSlotIdx, task) => {
+            const slotsNeeded = Math.max(1, Math.ceil((task.duration || 30) / 30));
+            for (let i = 0; i < slotsNeeded && (startSlotIdx + i) < slots.length; i++) {
+                const slot = slots[startSlotIdx + i];
+                if (i === 0) {
+                    slot.task = task;
+                    slot.isStart = true;
+                    slot.spanCount = slotsNeeded;
+                } else if (!slot.task) {
+                    slot.task = task;
+                    slot.isContinuation = true;
+                }
+            }
+        };
+
+        // First pass: place tasks with a scheduledTime into their pinned slots
         const scheduled = todayTasks.filter(t => t.scheduledTime);
         const unscheduled = todayTasks.filter(t => !t.scheduledTime);
 
         scheduled.forEach(task => {
             const key = this._timeToSlotKey(task.scheduledTime);
-            const slot = slots.find(s => s.time === key && !s.task);
-            if (slot) slot.task = task;
+            const idx = slots.findIndex(s => s.time === key);
+            if (idx >= 0 && !slots[idx].task) fillSlots(idx, task);
         });
 
         // Second pass: auto-assign unscheduled tasks into empty slots from now
@@ -1707,9 +1774,19 @@ class PlannerViewRenderer {
         let slotIdx = startIdx;
         unscheduled.forEach(task => {
             const slotsNeeded = Math.max(1, Math.ceil((task.duration || 30) / 30));
-            while (slotIdx < slots.length && slots[slotIdx].task) slotIdx++;
+            // Find a gap big enough for this task
+            while (slotIdx < slots.length) {
+                if (!slots[slotIdx].task) {
+                    let fits = true;
+                    for (let i = 0; i < slotsNeeded && (slotIdx + i) < slots.length; i++) {
+                        if (slots[slotIdx + i].task) { fits = false; break; }
+                    }
+                    if (fits) break;
+                }
+                slotIdx++;
+            }
             if (slotIdx < slots.length) {
-                slots[slotIdx].task = task;
+                fillSlots(slotIdx, task);
                 slotIdx += slotsNeeded;
             }
         });
@@ -1721,14 +1798,19 @@ class PlannerViewRenderer {
             return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
         };
 
-        this.container.innerHTML = `<div class="planner-grid">${slots.map(s =>
-            `<div class="planner-slot${s.isCurrent ? ' planner-slot--now' : ''}${s.isPast ? ' planner-slot--past' : ''}" data-time="${s.time}" ${s.isCurrent ? 'id="plannerNow"' : ''}>
+        this.container.innerHTML = `<div class="planner-grid">${slots.map(s => {
+            const isStart = s.task && s.isStart;
+            const isCont = s.task && s.isContinuation;
+            const taskLabel = isStart
+                ? `${s.task.type === 'todo' ? '<span style="color:var(--c-primary);font-size:0.7rem;font-weight:700;margin-right:0.3rem">TODO</span>' : ''}${esc(s.task.title)} <span style="opacity:0.6;font-size:0.75rem;margin-left:0.35rem">${s.task.duration}m \u2192 ${taskEndTime(slots[slots.indexOf(s)].time, s.task.duration)}</span>`
+                : isCont ? `<span style="opacity:0.4;font-size:0.8rem">\u2502 ${esc(s.task.title)}</span>` : '';
+            return `<div class="planner-slot${s.isCurrent ? ' planner-slot--now' : ''}${s.isPast ? ' planner-slot--past' : ''}${isCont ? ' planner-slot--cont' : ''}" data-time="${s.time}" ${s.isCurrent ? 'id="plannerNow"' : ''}>
                 <div class="planner-slot__time">${s.time}</div>
-                <div class="planner-slot__task ${s.task ? 'has-task' : 'empty'}" ${s.task ? `data-id="${s.task.id}" draggable="true"` : ''}>
-                    ${s.task ? `${esc(s.task.title)} <span style="opacity:0.6;font-size:0.75rem;margin-left:0.35rem">${s.task.duration}m \u2192 ${taskEndTime(s.time, s.task.duration)}</span>` : (s.isCurrent ? 'Now' : '')}
+                <div class="planner-slot__task ${s.task ? 'has-task' : 'empty'}${isCont ? ' is-continuation' : ''}" ${isStart ? `data-id="${s.task.id}" draggable="true"` : ''}>
+                    ${taskLabel || (s.isCurrent ? 'Now' : '')}
                 </div>
-            </div>`
-        ).join('')}</div>`;
+            </div>`;
+        }).join('')}</div>`;
 
         this._attachEvents();
 
@@ -1924,6 +2006,29 @@ class PriorityFlowApp {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
             if (e.key === 'n' || e.key === 'N') { e.preventDefault(); this._showTaskModal(); }
         });
+
+        // Quick add todo
+        const quickInput = document.getElementById('quickAddInput');
+        const quickTime = document.getElementById('quickAddTime');
+        const quickSubmit = () => {
+            const title = quickInput.value.trim();
+            if (!title) return;
+            const data = { title, type: 'todo', day: 'Today', duration: 10 };
+            if (quickTime.value) data.scheduledTime = quickTime.value;
+            const task = this.tm.create(data);
+            if (task) {
+                quickInput.value = '';
+                quickTime.value = '';
+                this.motivational.toast('Quick todo added!', 'success');
+                // Highlight the new todo briefly
+                setTimeout(() => {
+                    const card = document.querySelector(`[data-id="${task.id}"] .task-card`);
+                    if (card) { card.classList.add('highlight-next'); setTimeout(() => card.classList.remove('highlight-next'), 3000); }
+                }, 100);
+            }
+        };
+        document.getElementById('quickAddBtn').addEventListener('click', quickSubmit);
+        quickInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); quickSubmit(); } });
 
         // Mobile: FAB
         document.getElementById('mobileFab').addEventListener('click', () => this._showTaskModal());
