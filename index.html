@@ -13,6 +13,25 @@
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%235B5BFF' width='100' height='100' rx='22'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white'>P</text></svg>">
     <link rel="manifest" href="manifest.json">
     <link href="https://api.fontshare.com/css?f[]=satoshi@400,500,600,700&f[]=cabinet-grotesk@500,600,700" rel="stylesheet">
+    <!-- Firebase SDK (compat v9) -->
+    <!-- SETUP: Replace these placeholder values with your own Firebase project config.
+         1. Go to https://console.firebase.google.com and create a project.
+         2. Enable Google Sign-In under Authentication > Sign-in method.
+         3. Create a Firestore database (start in production mode).
+         4. Add Firestore security rules (Rules tab):
+              rules_version = '2';
+              service cloud.firestore {
+                match /databases/{database}/documents {
+                  match /users/{uid}/{document=**} {
+                    allow read, write: if request.auth != null && request.auth.uid == uid;
+                  }
+                }
+              }
+         5. In Project Settings > Your apps, register a Web app and copy the config below.
+    -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
 /* ============= ROOT & VARIABLES ============= */
 :root {
@@ -102,6 +121,20 @@ a { color: var(--c-primary); text-decoration: none; }
 .sync-dot.syncing { background: var(--c-warning); animation: pulse 1s infinite; }
 .sync-dot.error { background: var(--c-danger); }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Google Sign-In button */
+.btn--google {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    padding: 0.55rem 1.25rem; border-radius: var(--radius-sm);
+    background: #fff; color: #3c4043; font-size: 0.9rem; font-weight: 600;
+    border: 1px solid #dadce0; cursor: pointer; transition: var(--transition);
+    font-family: inherit; width: 100%; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.btn--google:hover { background: #f8f9fa; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.btn--google svg { flex-shrink: 0; }
+[data-theme="dark"] .btn--google { background: #2a2a3e; color: var(--c-text); border-color: var(--c-border); }
+[data-theme="dark"] .btn--google:hover { background: var(--c-surface-hover); }
 
 /* Sidebar: Today's Key Tasks */
 .key-task { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.4rem 0.25rem; border-radius: var(--radius-xs); cursor: pointer; transition: var(--transition); }
@@ -1040,128 +1073,147 @@ class ThemeManager {
     }
 }
 
-// ============= GITHUB SYNC MANAGER =============
-class GitHubSyncManager {
+// ============= FIREBASE MANAGER =============
+class FirebaseManager {
     constructor(bus, storage, taskManager) {
         this.bus = bus;
         this.store = storage;
         this.tm = taskManager;
+        this._user = null;
+        this._db = null;
+        this._unsubscribe = null;
         this._debounceTimer = null;
+        this._isPulling = false;
     }
 
-    get token() { return this.store.get('pf.github.token', ''); }
-    get gistId() { return this.store.get('pf.github.gistId', ''); }
+    // ---- Replace with your own Firebase project config ----
+    // See setup instructions in the <head> comments above.
+    static CONFIG = {
+        apiKey: "AIzaSyDFgFYWgRmU7LJzgwbwM864S55A7pyZu-w",
+        authDomain: "priorityflow-eac44.firebaseapp.com",
+        projectId: "priorityflow-eac44",
+        storageBucket: "priorityflow-eac44.firebasestorage.app",
+        messagingSenderId: "706588681862",
+        appId: "1:706588681862:web:cd2d32f5887592260b5307"
+    };
+    // -------------------------------------------------------
 
-    async _apiFetch(url, opts = {}) {
-        const r = await fetch(url, {
-            ...opts,
-            headers: { 'Authorization': `token ${this.token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) }
-        });
-        if (!r.ok) {
-            const body = await r.json().catch(() => ({}));
-            const msg = r.status === 401 ? 'Invalid token — needs gist scope'
-                      : r.status === 404 ? 'Gist not found'
-                      : r.status === 403 ? 'Rate limited or forbidden'
-                      : `GitHub API error ${r.status}`;
-            throw new Error(msg);
-        }
-        return r.json();
-    }
+    get isSignedIn() { return !!this._user; }
+    get displayName() { return this.store.get('pf.fb.displayName', ''); }
+    get photoURL() { return this.store.get('pf.fb.photoURL', ''); }
+    get email() { return this.store.get('pf.fb.email', ''); }
 
-    async connect(token, gistId) {
-        this.store.set('pf.github.token', token);
-        if (gistId) this.store.set('pf.github.gistId', gistId);
-        await this.fetchUser();
-        await this.sync();
-    }
-
-    async fetchUser() {
-        if (!this.token) return;
+    init() {
         try {
-            const user = await this._apiFetch('https://api.github.com/user');
-            this.store.set('pf.github.username', user.login);
-            this.store.set('pf.github.avatar', user.avatar_url);
-            this.bus.emit('user:updated');
+            firebase.initializeApp(FirebaseManager.CONFIG);
+            this._db = firebase.firestore();
+
+            firebase.auth().onAuthStateChanged(user => {
+                this._user = user;
+                if (user) {
+                    this.store.set('pf.fb.displayName', user.displayName || user.email || 'User');
+                    this.store.set('pf.fb.photoURL', user.photoURL || '');
+                    this.store.set('pf.fb.email', user.email || '');
+                    this.bus.emit('user:updated');
+                    this._setupListener();
+                } else {
+                    this._cleanup();
+                    this.bus.emit('user:updated');
+                    this.bus.emit('sync:status', { state: '', text: 'Not signed in' });
+                }
+            });
         } catch (err) {
-            console.error('Fetch user error:', err);
+            console.error('Firebase init error:', err);
+            this.bus.emit('sync:status', { state: 'error', text: 'Config error' });
+        }
+    }
+
+    async signIn() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try {
+            await firebase.auth().signInWithPopup(provider);
+        } catch (err) {
+            console.error('Sign-in error:', err);
+            const msg = err.code === 'auth/popup-blocked' ? 'Allow popups and try again' : 'Sign-in failed';
+            this.bus.emit('sync:status', { state: 'error', text: msg });
+        }
+    }
+
+    async signOut() {
+        this._cleanup();
+        await firebase.auth().signOut();
+        this.store.remove('pf.fb.displayName');
+        this.store.remove('pf.fb.photoURL');
+        this.store.remove('pf.fb.email');
+        this.bus.emit('user:updated');
+        this.bus.emit('sync:status', { state: '', text: 'Not signed in' });
+    }
+
+    _setupListener() {
+        if (!this._user || !this._db) return;
+        this._cleanup();
+        this.bus.emit('sync:status', { state: 'syncing', text: 'Connecting...' });
+
+        const docRef = this._db.collection('users').doc(this._user.uid).collection('data').doc('tasks');
+        this._unsubscribe = docRef.onSnapshot(snap => {
+            if (!snap.exists) {
+                // No remote data yet — push local
+                this._push();
+                return;
+            }
+            const remote = snap.data();
+            const remoteTs = remote.lastModified || 0;
+            const localTs = this.tm.lastModified || 0;
+
+            if (remoteTs > localTs) {
+                // Remote is newer — pull
+                this._isPulling = true;
+                this.tm.setTasks(remote.tasks || []);
+                this.tm.lastModified = remoteTs;
+                this.store.set('pf.tasks', this.tm.tasks);
+                this.store.set('pf.lastModified', remoteTs);
+                this.bus.emit('tasks:changed');
+                this._isPulling = false;
+                this.bus.emit('sync:status', { state: 'connected', text: 'Pulled' });
+            } else if (localTs > remoteTs) {
+                // Local is newer — push
+                this._push();
+            } else {
+                this.bus.emit('sync:status', { state: 'connected', text: 'Connected' });
+            }
+        }, err => {
+            console.error('Firestore listener error:', err);
+            this.bus.emit('sync:status', { state: 'error', text: 'Sync error' });
+        });
+    }
+
+    _cleanup() {
+        if (this._unsubscribe) { this._unsubscribe(); this._unsubscribe = null; }
+        clearTimeout(this._debounceTimer);
+    }
+
+    async _push() {
+        if (!this._user || !this._db) return;
+        try {
+            this.bus.emit('sync:status', { state: 'syncing', text: 'Saving...' });
+            const ts = Date.now();
+            this.tm.lastModified = ts;
+            this.store.set('pf.lastModified', ts);
+            await this._db.collection('users').doc(this._user.uid).collection('data').doc('tasks').set({
+                tasks: this.tm.tasks,
+                lastModified: ts,
+            });
+            this.bus.emit('sync:status', { state: 'connected', text: 'Saved' });
+        } catch (err) {
+            console.error('Firestore push error:', err);
+            this.bus.emit('sync:status', { state: 'error', text: 'Save failed' });
         }
     }
 
     syncDebounced() {
+        if (this._isPulling) return;
         clearTimeout(this._debounceTimer);
-        this._debounceTimer = setTimeout(() => this.sync().catch(() => {}), 3000);
-    }
-
-    async sync() {
-        if (!this.token) return;
-        this.bus.emit('sync:status', { state: 'syncing', text: 'Syncing...' });
-        try {
-            let gistId = this.gistId;
-            if (!gistId || gistId === 'undefined') {
-                const gists = await this._apiFetch('https://api.github.com/gists?per_page=100');
-                const found = gists.find(g => g.files && g.files['priorityflow.json']);
-                if (found) {
-                    gistId = found.id;
-                } else {
-                    const created = await this._apiFetch('https://api.github.com/gists', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            description: 'PriorityFlow sync',
-                            public: false,
-                            files: { 'priorityflow.json': { content: JSON.stringify({ tasks: this.tm.tasks, lastModified: this.tm.lastModified }) } }
-                        })
-                    });
-                    gistId = created.id;
-                }
-                this.store.set('pf.github.gistId', gistId);
-            }
-
-            const gistData = await this._apiFetch(`https://api.github.com/gists/${gistId}`);
-            const fileEntry = gistData.files?.['priorityflow.json'];
-
-            if (!fileEntry) {
-                await this._apiFetch(`https://api.github.com/gists/${gistId}`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ files: { 'priorityflow.json': { content: JSON.stringify({ tasks: this.tm.tasks, lastModified: this.tm.lastModified }) } } })
-                });
-                this.bus.emit('sync:status', { state: 'connected', text: 'Pushed' });
-            } else {
-                const remote = JSON.parse(fileEntry.content);
-                const remoteTs = remote.lastModified || 0;
-                const localTs = this.tm.lastModified || 0;
-
-                if (remoteTs > localTs) {
-                    this.tm.setTasks(remote.tasks || []);
-                    this.tm.lastModified = remoteTs;
-                    this.store.set('pf.tasks', this.tm.tasks);
-                    this.store.set('pf.lastModified', remoteTs);
-                    this.bus.emit('tasks:changed');
-                    this.bus.emit('sync:status', { state: 'connected', text: 'Pulled' });
-                } else if (localTs > remoteTs) {
-                    await this._apiFetch(`https://api.github.com/gists/${gistId}`, {
-                        method: 'PATCH',
-                        body: JSON.stringify({ files: { 'priorityflow.json': { content: JSON.stringify({ tasks: this.tm.tasks, lastModified: localTs }) } } })
-                    });
-                    this.bus.emit('sync:status', { state: 'connected', text: 'Pushed' });
-                } else {
-                    this.bus.emit('sync:status', { state: 'connected', text: 'In sync' });
-                }
-            }
-        } catch (err) {
-            console.error('Sync error:', err);
-            const msg = err.message.includes('token') ? 'Bad token' : 'Sync failed';
-            this.bus.emit('sync:status', { state: 'error', text: msg });
-            throw err; // Re-throw so connect() can catch it
-        }
-    }
-
-    disconnect() {
-        this.store.remove('pf.github.token');
-        this.store.remove('pf.github.gistId');
-        this.store.remove('pf.github.username');
-        this.store.remove('pf.github.avatar');
-        this.bus.emit('user:updated');
-        this.bus.emit('sync:status', { state: '', text: 'Not connected' });
+        this._debounceTimer = setTimeout(() => this._push().catch(() => {}), 3000);
     }
 }
 
@@ -1994,7 +2046,7 @@ class PriorityFlowApp {
         this.pomo = new PomodoroManager(this.bus, this.store, this.tm);
         this.morning = new MorningFlowManager(this.bus, this.store);
         this.reviews = new ReviewManager(this.store);
-        this.sync = new GitHubSyncManager(this.bus, this.store, this.tm);
+        this.sync = new FirebaseManager(this.bus, this.store, this.tm);
         this.motivational = new MotivationalEngine(this.bus, this.tm);
 
         this.rankedView = new RankedViewRenderer(this.bus, this.tm, this.modals, this.pomo);
@@ -2010,7 +2062,7 @@ class PriorityFlowApp {
         this._setupListeners();
         this._renderAll();
         this._checkMorning();
-        this.sync.fetchUser().then(() => this.sync.sync().catch(() => {}));
+        this.sync.init();
         this._updateUserUI();
 
         // Debounced sync on task change
@@ -2061,8 +2113,7 @@ class PriorityFlowApp {
         document.getElementById('settingsBtn').addEventListener('click', () => this._showSettingsModal());
         document.getElementById('themeBtn').addEventListener('click', () => this.theme.toggle());
         document.getElementById('syncStatus').addEventListener('click', () => {
-            if (!this.sync.token) this._showSettingsModal();
-            else this.sync.sync().catch(() => {});
+            this._showSettingsModal();
         });
 
         // Keyboard shortcuts
@@ -2120,12 +2171,12 @@ class PriorityFlowApp {
     _showMobileMoreMenu() {
         this.modals.open((overlay) => {
             const stats = this.tm.todayStats();
-            const username = this.store.get('pf.github.username', '');
-            const avatar = this.store.get('pf.github.avatar', '');
+            const username = this.sync.displayName;
+            const photo = this.sync.photoURL;
             overlay.innerHTML = `<div class="modal" style="max-width:100%">
                 <div class="modal__header">
                     <div style="display:flex;align-items:center;gap:0.75rem">
-                        <div class="sidebar__avatar" style="width:32px;height:32px;font-size:0.8rem">${avatar ? `<img src="${esc(avatar)}">` : (username ? username.charAt(0).toUpperCase() : '?')}</div>
+                        <div class="sidebar__avatar" style="width:32px;height:32px;font-size:0.8rem">${photo ? `<img src="${esc(photo)}">` : (username ? username.charAt(0).toUpperCase() : '?')}</div>
                         <div>
                             <div style="font-weight:600;font-size:0.9rem">${esc(username) || 'PriorityFlow'}</div>
                             <div style="font-size:0.75rem;color:var(--c-text-muted)">${stats.done}/${stats.total} tasks today</div>
@@ -2255,12 +2306,12 @@ class PriorityFlowApp {
     }
 
     _updateUserUI() {
-        const name = this.store.get('pf.github.username', '');
-        const avatar = this.store.get('pf.github.avatar', '');
+        const name = this.sync.displayName;
+        const photo = this.sync.photoURL;
         document.getElementById('userName').textContent = name || 'PriorityFlow';
         const avatarEl = document.getElementById('userAvatar');
-        if (avatar) {
-            avatarEl.innerHTML = `<img src="${esc(avatar)}" alt="">`;
+        if (photo) {
+            avatarEl.innerHTML = `<img src="${esc(photo)}" alt="">`;
         } else {
             avatarEl.textContent = name ? name.charAt(0).toUpperCase() : '?';
         }
@@ -2284,7 +2335,7 @@ class PriorityFlowApp {
         if (!this.morning.needsCheckin()) return;
         const overlay = document.createElement('div');
         overlay.className = 'morning-overlay';
-        const username = this.store.get('pf.github.username', 'there');
+        const username = this.sync.displayName || 'there';
         const hour = new Date().getHours();
         const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
         let selectedMood = null;
@@ -2694,34 +2745,50 @@ class PriorityFlowApp {
 
     // ============= SETTINGS MODAL =============
     _showSettingsModal() {
-        const token = this.store.get('pf.github.token', '');
-        const gistId = this.store.get('pf.github.gistId', '');
         const categories = this.store.get('pf.categories', ['Research', 'Admin', 'Personal', 'Health', 'Work', 'Side Project']);
+        const signedIn = this.sync.isSignedIn;
+        const displayName = this.sync.displayName;
+        const email = this.sync.email;
+        const photo = this.sync.photoURL;
 
         this.modals.open((overlay) => {
+            const accountSection = signedIn
+                ? `<div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem;background:var(--c-surface-hover);border-radius:var(--radius-sm);margin-bottom:1rem">
+                        <div class="sidebar__avatar" style="width:40px;height:40px">
+                            ${photo ? `<img src="${esc(photo)}" alt="">` : `<span style="font-size:1rem;font-weight:700">${displayName.charAt(0).toUpperCase()}</span>`}
+                        </div>
+                        <div style="flex:1;min-width:0">
+                            <div style="font-weight:600;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(displayName)}</div>
+                            <div style="font-size:0.75rem;color:var(--c-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(email)}</div>
+                        </div>
+                        <span class="sync-dot connected" style="flex-shrink:0"></span>
+                   </div>
+                   <button class="btn btn--danger btn--sm" id="signOutBtn" style="margin-bottom:1.5rem">Sign Out</button>`
+                : `<p style="font-size:0.85rem;color:var(--c-text-muted);margin-bottom:1rem;line-height:1.5">
+                       Sign in with Google to sync your tasks across all your devices automatically.
+                   </p>
+                   <button class="btn--google" id="googleSignInBtn">
+                       <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                           <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                           <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                           <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                           <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                       </svg>
+                       Sign in with Google
+                   </button>
+                   <div class="form-hint" style="margin-top:0.5rem">Your tasks are stored privately — only you can access them.</div>`;
+
             overlay.innerHTML = `<div class="modal">
                 <div class="modal__header">
                     <div class="modal__title">Settings</div>
                     <button class="btn--icon modal-close">&times;</button>
                 </div>
                 <div class="modal__body">
-                    <div class="sidebar__label" style="margin-bottom:0.75rem">GitHub Sync</div>
-                    <div class="form-group">
-                        <label class="form-label">Personal Access Token</label>
-                        <input class="form-input" type="password" id="settingsToken" value="${token ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : ''}" placeholder="ghp_...">
-                        <div class="form-hint">Create at github.com/settings/tokens with <strong>gist</strong> scope only.</div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Gist ID (optional)</label>
-                        <input class="form-input" id="settingsGistId" value="${esc(gistId)}" placeholder="Auto-created if blank">
-                    </div>
-                    <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
-                        <button class="btn btn--primary btn--sm" id="settingsConnect">Connect</button>
-                        ${token ? '<button class="btn btn--danger btn--sm" id="settingsDisconnect">Disconnect</button>' : ''}
-                    </div>
+                    <div class="sidebar__label" style="margin-bottom:0.75rem">Account &amp; Sync</div>
+                    ${accountSection}
                     <div class="sidebar__label" style="margin-bottom:0.75rem">Categories</div>
                     <div class="form-group">
-                        <input class="form-input" id="settingsCategories" value="${categories.join(', ')}" placeholder="Comma-separated">
+                        <input class="form-input" id="settingsCategories" value="${esc(categories.join(', '))}" placeholder="Comma-separated">
                         <div class="form-hint">Comma-separated list of task categories.</div>
                     </div>
                 </div>
@@ -2735,25 +2802,17 @@ class PriorityFlowApp {
             modal.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
             modal.querySelector('#settingsClose').addEventListener('click', () => this.modals.closeCurrent());
 
-            modal.querySelector('#settingsConnect').addEventListener('click', async () => {
-                const tokenVal = modal.querySelector('#settingsToken').value;
-                if (tokenVal && !tokenVal.startsWith('\u2022')) {
-                    const btn = modal.querySelector('#settingsConnect');
-                    btn.textContent = 'Connecting...';
+            if (signedIn) {
+                modal.querySelector('#signOutBtn').addEventListener('click', async () => {
+                    await this.sync.signOut();
+                    this.modals.closeCurrent();
+                });
+            } else {
+                modal.querySelector('#googleSignInBtn').addEventListener('click', async () => {
+                    const btn = modal.querySelector('#googleSignInBtn');
+                    btn.textContent = 'Signing in...';
                     btn.disabled = true;
-                    try {
-                        await this.sync.connect(tokenVal, modal.querySelector('#settingsGistId').value.trim());
-                        btn.textContent = 'Connected!';
-                    } catch (err) {
-                        btn.textContent = 'Failed';
-                        setTimeout(() => { btn.textContent = 'Connect'; btn.disabled = false; }, 2000);
-                    }
-                }
-            });
-
-            if (token) {
-                modal.querySelector('#settingsDisconnect').addEventListener('click', () => {
-                    this.sync.disconnect();
+                    await this.sync.signIn();
                     this.modals.closeCurrent();
                 });
             }
