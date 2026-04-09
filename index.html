@@ -392,6 +392,35 @@ a { color: var(--c-primary); text-decoration: none; }
     .onboarding__features { grid-template-columns: 1fr; }
 }
 
+/* ============= WHAT'S NEW BANNER ============= */
+.whats-new-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2500;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s ease; backdrop-filter: blur(4px);
+}
+.whats-new {
+    max-width: 460px; width: 92%; background: var(--c-bg); border-radius: 16px;
+    padding: 2rem 1.5rem; text-align: center; box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+    animation: slideUp 0.4s ease;
+}
+.whats-new__badge {
+    display: inline-block; background: linear-gradient(135deg, var(--c-primary), #9B59B6);
+    color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.75rem;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;
+}
+.whats-new__title {
+    font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem;
+}
+.whats-new__subtitle { color: var(--c-text-muted); font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5; }
+.whats-new__list {
+    text-align: left; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.5rem;
+}
+.whats-new__item {
+    display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.85rem; line-height: 1.4;
+}
+.whats-new__item-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+.whats-new__item-text strong { font-weight: 600; }
+
 /* ============= ACTIVE TASK BANNER ============= */
 .active-task-banner {
     background: linear-gradient(135deg, var(--c-primary), #7B61FF); color: #fff;
@@ -2736,7 +2765,10 @@ class PriorityFlowApp {
     // ============= ONBOARDING =============
     _checkOnboarding() {
         const seen = this.store.get('pf.onboarded', false);
-        if (seen) return;
+        if (seen) {
+            this._checkWhatsNew();
+            return;
+        }
 
         let step = 0;
         const overlay = document.createElement('div');
@@ -2748,8 +2780,8 @@ class PriorityFlowApp {
                 overlay.innerHTML = `<div class="onboarding">
                     <div class="onboarding__logo">P</div>
                     <div class="onboarding__title">Welcome to PriorityFlow</div>
-                    <div class="onboarding__subtitle">A smart task scheduler that helps you focus on what matters most — every single day.</div>
-                    <div class="onboarding__dots"><span class="onboarding__dot active"></span><span class="onboarding__dot"></span><span class="onboarding__dot"></span></div>
+                    <div class="onboarding__subtitle">A task scheduler built for the way your brain actually works. No guilt, no pressure — just the right task at the right time.</div>
+                    <div class="onboarding__dots"><span class="onboarding__dot active"></span><span class="onboarding__dot"></span><span class="onboarding__dot"></span><span class="onboarding__dot"></span></div>
                     <div class="onboarding__actions">
                         <button class="btn btn--primary" id="obNext" style="min-width:180px">Get Started</button>
                         <button class="onboarding__skip" id="obSkip">Skip for now</button>
@@ -2757,31 +2789,31 @@ class PriorityFlowApp {
                 </div>`;
             } else if (step === 1) {
                 overlay.innerHTML = `<div class="onboarding">
-                    <div class="onboarding__title" style="font-size:1.3rem;margin-bottom:0.35rem">Everything you need to stay on track</div>
-                    <div class="onboarding__subtitle" style="margin-bottom:1.25rem">PriorityFlow scores, schedules, and tracks your tasks so you always know what to work on next.</div>
+                    <div class="onboarding__title" style="font-size:1.3rem;margin-bottom:0.35rem">Smart prioritization that adapts to you</div>
+                    <div class="onboarding__subtitle" style="margin-bottom:1.25rem">PriorityFlow scores and ranks your tasks automatically, so you always know what to tackle next.</div>
                     <div class="onboarding__features">
                         <div class="onboarding__feature">
                             <div class="onboarding__feature-icon">&#9889;</div>
-                            <div class="onboarding__feature-title">Smart Prioritization</div>
-                            <div class="onboarding__feature-desc">Tasks are auto-ranked by urgency, impact, energy, and interest.</div>
+                            <div class="onboarding__feature-title">Auto-Ranked Tasks</div>
+                            <div class="onboarding__feature-desc">Tasks scored by urgency, impact, energy, and interest — highest priority always on top.</div>
                         </div>
                         <div class="onboarding__feature">
                             <div class="onboarding__feature-icon">&#128197;</div>
                             <div class="onboarding__feature-title">Day Planner</div>
-                            <div class="onboarding__feature-desc">Drag tasks into time slots and get notified when they start.</div>
+                            <div class="onboarding__feature-desc">Drag tasks into time slots and get notified when it's time to start.</div>
                         </div>
                         <div class="onboarding__feature">
                             <div class="onboarding__feature-icon">&#127813;</div>
                             <div class="onboarding__feature-title">Focus Timer</div>
-                            <div class="onboarding__feature-desc">Built-in Pomodoro timer with session tracking per task.</div>
+                            <div class="onboarding__feature-desc">Pomodoro timer with per-task tracking. Or try "Just 5 minutes" to break the starting barrier.</div>
                         </div>
                         <div class="onboarding__feature">
                             <div class="onboarding__feature-icon">&#128293;</div>
                             <div class="onboarding__feature-title">Habits &amp; Streaks</div>
-                            <div class="onboarding__feature-desc">Recurring tasks with streak tracking to build consistency.</div>
+                            <div class="onboarding__feature-desc">Build consistency with recurring tasks. Missed a day? No shame — just a fresh start.</div>
                         </div>
                     </div>
-                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot active"></span><span class="onboarding__dot"></span></div>
+                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot active"></span><span class="onboarding__dot"></span><span class="onboarding__dot"></span></div>
                     <div class="onboarding__actions">
                         <button class="btn btn--primary" id="obNext" style="min-width:180px">Next</button>
                         <button class="onboarding__skip" id="obSkip">Skip for now</button>
@@ -2789,9 +2821,41 @@ class PriorityFlowApp {
                 </div>`;
             } else if (step === 2) {
                 overlay.innerHTML = `<div class="onboarding">
+                    <div class="onboarding__title" style="font-size:1.3rem;margin-bottom:0.35rem">Built for how your brain works</div>
+                    <div class="onboarding__subtitle" style="margin-bottom:1.25rem">Features designed to work with ADHD, executive dysfunction, and overwhelm — not against them.</div>
+                    <div class="onboarding__features">
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#127922;</div>
+                            <div class="onboarding__feature-title">Pick For Me</div>
+                            <div class="onboarding__feature-desc">Can't decide? One tap picks your top task and launches a countdown.</div>
+                        </div>
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#129504;</div>
+                            <div class="onboarding__feature-title">Brain Games</div>
+                            <div class="onboarding__feature-desc">Quick focus games warm up your brain, then nudge you to your top task.</div>
+                        </div>
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#127919;</div>
+                            <div class="onboarding__feature-title">Focus Mode</div>
+                            <div class="onboarding__feature-desc">Feeling overwhelmed? Focus Mode shows only your top 3 tasks.</div>
+                        </div>
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#128173;</div>
+                            <div class="onboarding__feature-title">Brain Dump</div>
+                            <div class="onboarding__feature-desc">Rapid-fire capture everything in your head. Sort it later — get it out now.</div>
+                        </div>
+                    </div>
+                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot"></span><span class="onboarding__dot active"></span><span class="onboarding__dot"></span></div>
+                    <div class="onboarding__actions">
+                        <button class="btn btn--primary" id="obNext" style="min-width:180px">Next</button>
+                        <button class="onboarding__skip" id="obSkip">Skip for now</button>
+                    </div>
+                </div>`;
+            } else if (step === 3) {
+                overlay.innerHTML = `<div class="onboarding">
                     <div class="onboarding__title" style="font-size:1.3rem;margin-bottom:0.35rem">Sync across all your devices</div>
                     <div class="onboarding__subtitle" style="margin-bottom:1.5rem">Sign in with Google to save your tasks to the cloud. Your data stays private — only you can access it.</div>
-                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot"></span><span class="onboarding__dot active"></span></div>
+                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot"></span><span class="onboarding__dot"></span><span class="onboarding__dot active"></span></div>
                     <div class="onboarding__actions">
                         <button class="btn--google" id="obSignIn" style="max-width:280px">
                             <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -2838,6 +2902,63 @@ class PriorityFlowApp {
                 finish();
             });
         }
+    }
+
+    // ============= WHAT'S NEW (for returning users) =============
+    _checkWhatsNew() {
+        const currentVersion = 'v2.0';
+        const seenVersion = this.store.get('pf.whatsNewSeen', '');
+        if (seenVersion === currentVersion) return;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'whats-new-overlay';
+        overlay.innerHTML = `<div class="whats-new">
+            <div class="whats-new__badge">What's New</div>
+            <div class="whats-new__title">PriorityFlow just got a big upgrade</div>
+            <div class="whats-new__subtitle">New features designed for the way your brain actually works.</div>
+            <div class="whats-new__list">
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#9203;</span>
+                    <div class="whats-new__item-text"><strong>Just 5 Minutes</strong> — Can't start? Commit to just 5 minutes. That's often all it takes.</div>
+                </div>
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#127922;</span>
+                    <div class="whats-new__item-text"><strong>Pick For Me</strong> — Decision paralysis? One tap picks your top task and launches it.</div>
+                </div>
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#127919;</span>
+                    <div class="whats-new__item-text"><strong>Focus Mode</strong> — Overwhelmed? See only your top 3 tasks. Auto-activates on low energy days.</div>
+                </div>
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#128173;</span>
+                    <div class="whats-new__item-text"><strong>Brain Dump</strong> — Rapid-fire capture everything in your head. Sort it later.</div>
+                </div>
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#128156;</span>
+                    <div class="whats-new__item-text"><strong>No Streak Shaming</strong> — Missed a day? Fresh start, not a failure. Bad day mode reduces your load.</div>
+                </div>
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#127919;</span>
+                    <div class="whats-new__item-text"><strong>Editable Daily Focus</strong> — Tap "Today's Focus" anytime to set or change your intention.</div>
+                </div>
+            </div>
+            <button class="btn btn--primary" id="wnDismiss" style="min-width:180px">Got it!</button>
+        </div>`;
+
+        document.body.appendChild(overlay);
+        overlay.querySelector('#wnDismiss').addEventListener('click', () => {
+            this.store.set('pf.whatsNewSeen', currentVersion);
+            overlay.style.animation = 'fadeIn 0.3s ease reverse forwards';
+            setTimeout(() => overlay.remove(), 300);
+        });
+        // Also dismiss on backdrop click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                this.store.set('pf.whatsNewSeen', currentVersion);
+                overlay.style.animation = 'fadeIn 0.3s ease reverse forwards';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        });
     }
 
     // ============= MORNING FLOW =============
