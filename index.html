@@ -330,6 +330,61 @@ a { color: var(--c-primary); text-decoration: none; }
 .form-range { width: 100%; accent-color: var(--c-primary); }
 .form-hint { font-size: 0.75rem; color: var(--c-text-muted); margin-top: 0.25rem; }
 
+/* ============= ONBOARDING ============= */
+.onboarding-overlay {
+    position: fixed; inset: 0; background: var(--c-bg); z-index: 3000;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.5s ease;
+}
+.onboarding {
+    max-width: 440px; width: 90%; text-align: center; padding: 2rem 1.5rem;
+}
+.onboarding__logo {
+    width: 72px; height: 72px; border-radius: 18px; background: var(--c-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #fff; font-weight: 900; margin: 0 auto 1.25rem;
+    box-shadow: 0 8px 24px rgba(91,91,255,0.3);
+    font-family: var(--font-display);
+}
+.onboarding__title {
+    font-family: var(--font-display); font-size: 1.8rem; font-weight: 700;
+    margin-bottom: 0.5rem; line-height: 1.2;
+}
+.onboarding__subtitle {
+    color: var(--c-text-muted); font-size: 0.95rem; line-height: 1.5;
+    margin-bottom: 2rem;
+}
+.onboarding__features {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    margin-bottom: 2rem; text-align: left;
+}
+.onboarding__feature {
+    background: var(--c-surface); border: 1px solid var(--c-border);
+    border-radius: var(--radius); padding: 0.85rem;
+    transition: var(--transition);
+}
+.onboarding__feature-icon { font-size: 1.3rem; margin-bottom: 0.35rem; }
+.onboarding__feature-title { font-weight: 700; font-size: 0.8rem; margin-bottom: 0.15rem; }
+.onboarding__feature-desc { font-size: 0.72rem; color: var(--c-text-muted); line-height: 1.4; }
+.onboarding__dots {
+    display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;
+}
+.onboarding__dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--c-border);
+    transition: var(--transition);
+}
+.onboarding__dot.active { background: var(--c-primary); width: 24px; border-radius: 4px; }
+.onboarding__actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: center; }
+.onboarding__skip {
+    font-size: 0.8rem; color: var(--c-text-muted); cursor: pointer;
+    background: none; border: none; font-family: inherit; padding: 0.25rem;
+}
+.onboarding__skip:hover { color: var(--c-text); }
+@media (max-width: 768px) {
+    .onboarding__title { font-size: 1.5rem; }
+    .onboarding__features { grid-template-columns: 1fr; }
+}
+
 /* ============= MORNING FLOW ============= */
 .morning-overlay {
     position: fixed; inset: 0; background: var(--c-bg); z-index: 2000;
@@ -2061,9 +2116,10 @@ class PriorityFlowApp {
         this.tm.load();
         this._setupListeners();
         this._renderAll();
-        this._checkMorning();
         this.sync.init();
         this._updateUserUI();
+        this._checkOnboarding();
+        if (this.store.get('pf.onboarded', false)) this._checkMorning();
 
         // Debounced sync on task change
         this.bus.on('tasks:changed', () => { this._renderAll(); this.sync.syncDebounced(); });
@@ -2327,6 +2383,113 @@ class PriorityFlowApp {
                 if (state === 'connected') { dot.className = 'sync-dot connected'; label.textContent = 'Connected'; }
                 else { dot.className = 'sync-dot'; label.textContent = 'Not connected'; }
             }, 3000);
+        }
+    }
+
+    // ============= ONBOARDING =============
+    _checkOnboarding() {
+        const seen = this.store.get('pf.onboarded', false);
+        if (seen) return;
+
+        let step = 0;
+        const overlay = document.createElement('div');
+        overlay.className = 'onboarding-overlay';
+        document.body.appendChild(overlay);
+
+        const render = () => {
+            if (step === 0) {
+                overlay.innerHTML = `<div class="onboarding">
+                    <div class="onboarding__logo">P</div>
+                    <div class="onboarding__title">Welcome to PriorityFlow</div>
+                    <div class="onboarding__subtitle">A smart task scheduler that helps you focus on what matters most — every single day.</div>
+                    <div class="onboarding__dots"><span class="onboarding__dot active"></span><span class="onboarding__dot"></span><span class="onboarding__dot"></span></div>
+                    <div class="onboarding__actions">
+                        <button class="btn btn--primary" id="obNext" style="min-width:180px">Get Started</button>
+                        <button class="onboarding__skip" id="obSkip">Skip for now</button>
+                    </div>
+                </div>`;
+            } else if (step === 1) {
+                overlay.innerHTML = `<div class="onboarding">
+                    <div class="onboarding__title" style="font-size:1.3rem;margin-bottom:0.35rem">Everything you need to stay on track</div>
+                    <div class="onboarding__subtitle" style="margin-bottom:1.25rem">PriorityFlow scores, schedules, and tracks your tasks so you always know what to work on next.</div>
+                    <div class="onboarding__features">
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#9889;</div>
+                            <div class="onboarding__feature-title">Smart Prioritization</div>
+                            <div class="onboarding__feature-desc">Tasks are auto-ranked by urgency, impact, energy, and interest.</div>
+                        </div>
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#128197;</div>
+                            <div class="onboarding__feature-title">Day Planner</div>
+                            <div class="onboarding__feature-desc">Drag tasks into time slots and get notified when they start.</div>
+                        </div>
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#127813;</div>
+                            <div class="onboarding__feature-title">Focus Timer</div>
+                            <div class="onboarding__feature-desc">Built-in Pomodoro timer with session tracking per task.</div>
+                        </div>
+                        <div class="onboarding__feature">
+                            <div class="onboarding__feature-icon">&#128293;</div>
+                            <div class="onboarding__feature-title">Habits &amp; Streaks</div>
+                            <div class="onboarding__feature-desc">Recurring tasks with streak tracking to build consistency.</div>
+                        </div>
+                    </div>
+                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot active"></span><span class="onboarding__dot"></span></div>
+                    <div class="onboarding__actions">
+                        <button class="btn btn--primary" id="obNext" style="min-width:180px">Next</button>
+                        <button class="onboarding__skip" id="obSkip">Skip for now</button>
+                    </div>
+                </div>`;
+            } else if (step === 2) {
+                overlay.innerHTML = `<div class="onboarding">
+                    <div class="onboarding__title" style="font-size:1.3rem;margin-bottom:0.35rem">Sync across all your devices</div>
+                    <div class="onboarding__subtitle" style="margin-bottom:1.5rem">Sign in with Google to save your tasks to the cloud. Your data stays private — only you can access it.</div>
+                    <div class="onboarding__dots"><span class="onboarding__dot"></span><span class="onboarding__dot"></span><span class="onboarding__dot active"></span></div>
+                    <div class="onboarding__actions">
+                        <button class="btn--google" id="obSignIn" style="max-width:280px">
+                            <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                                <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                                <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                                <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                            </svg>
+                            Sign in with Google
+                        </button>
+                        <button class="onboarding__skip" id="obSkip">Continue without signing in</button>
+                    </div>
+                </div>`;
+            }
+            this._attachOnboardingEvents(overlay, render, () => step++);
+        };
+
+        render();
+    }
+
+    _attachOnboardingEvents(overlay, render, advanceStep) {
+        const finish = () => {
+            this.store.set('pf.onboarded', true);
+            overlay.style.animation = 'fadeIn 0.3s ease reverse forwards';
+            setTimeout(() => { overlay.remove(); this._checkMorning(); }, 300);
+        };
+
+        const nextBtn = overlay.querySelector('#obNext');
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => { advanceStep(); render(); });
+        }
+
+        const skipBtn = overlay.querySelector('#obSkip');
+        if (skipBtn) {
+            skipBtn.addEventListener('click', finish);
+        }
+
+        const signInBtn = overlay.querySelector('#obSignIn');
+        if (signInBtn) {
+            signInBtn.addEventListener('click', async () => {
+                signInBtn.textContent = 'Signing in...';
+                signInBtn.disabled = true;
+                await this.sync.signIn();
+                finish();
+            });
         }
     }
 
