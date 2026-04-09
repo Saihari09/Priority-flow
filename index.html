@@ -221,7 +221,7 @@ a { color: var(--c-primary); text-decoration: none; }
 .task-card.done .task-card__body,
 .task-card.done .task-card__actions,
 .task-card.done .task-card__meta { opacity: 0.5; }
-.task-card.dragging { opacity: 0.4; transform: scale(0.98); }
+.task-card.dragging, .task-card-wrapper.dragging { opacity: 0.4; transform: scale(0.98); }
 .task-card__check {
     width: 20px; height: 20px; border: 2px solid var(--c-border); border-radius: 6px;
     flex-shrink: 0; margin-top: 1px; cursor: pointer; transition: var(--transition);
@@ -253,6 +253,13 @@ a { color: var(--c-primary); text-decoration: none; }
 .task-card__actions { display: flex; gap: 0.25rem; flex-shrink: 0; opacity: 0; transition: var(--transition); }
 .task-card:hover .task-card__actions { opacity: 1; }
 .task-card__delete-desktop { color: var(--c-danger) !important; }
+@media (max-width: 768px) {
+    .task-card__actions { opacity: 1; flex-wrap: nowrap; }
+    .task-card__delete-desktop { display: none; }
+}
+
+/* Drag-over drop indicator for reordering */
+.task-card-wrapper.drag-over { box-shadow: 0 -3px 0 0 var(--c-primary); }
 
 /* ============= EISENHOWER GRID ============= */
 .eisenhower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -400,12 +407,9 @@ a { color: var(--c-primary); text-decoration: none; }
 
 /* ============= PICK FOR ME / FOCUS MODE ============= */
 .pick-for-me {
-    background: var(--c-surface); border: 2px dashed var(--c-primary); border-radius: var(--radius);
-    padding: 1.5rem; text-align: center; animation: slideUp 0.3s ease;
+    display: inline-flex; align-items: center;
 }
-.pick-for-me__task { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; margin: 0.75rem 0; }
-.pick-for-me__meta { font-size: 0.8rem; color: var(--c-text-muted); margin-bottom: 1.25rem; }
-.pick-for-me__actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+.pick-for-me .btn { font-size: 0.75rem; padding: 0.3rem 0.7rem; border-radius: 20px; white-space: nowrap; }
 .focus-mode-bar {
     display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;
     padding: 0.5rem 0.75rem; background: var(--c-warning-bg); border: 1px solid rgba(245,158,11,0.3);
@@ -476,10 +480,17 @@ a { color: var(--c-primary); text-decoration: none; }
 .intention-banner {
     background: var(--c-primary-bg); border: 1px solid rgba(91,91,255,0.2); border-radius: var(--radius);
     padding: 0.65rem 1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+    cursor: pointer; transition: var(--transition);
 }
+.intention-banner:hover { border-color: var(--c-primary); }
 .intention-banner__icon { font-size: 1.1rem; }
 .intention-banner__label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--c-primary); letter-spacing: 0.05em; }
 .intention-banner__text { font-size: 0.9rem; font-weight: 500; }
+.intention-banner__edit { flex-shrink: 0; font-size: 0.7rem; color: var(--c-text-muted); margin-left: auto; }
+.intention-banner__input {
+    flex: 1; border: none; background: transparent; font: inherit; font-size: 0.9rem;
+    font-weight: 500; color: var(--c-text); outline: none; min-width: 0;
+}
 
 /* Focus Nudge Bar */
 .focus-nudge {
@@ -535,13 +546,27 @@ a { color: var(--c-primary); text-decoration: none; }
 }
 
 /* Swipe-to-delete task card */
-.task-card-wrapper { position: relative; overflow: hidden; border-radius: var(--radius); }
+.task-card-wrapper { position: relative; overflow: hidden; border-radius: var(--radius); display: flex; align-items: stretch; }
+.task-card-wrapper__drag {
+    display: none; width: 28px; flex-shrink: 0; background: var(--c-surface);
+    border: 1px solid var(--c-border); border-right: none; border-radius: var(--radius) 0 0 var(--radius);
+    cursor: grab; touch-action: none; user-select: none;
+    align-items: center; justify-content: center; color: var(--c-text-muted); font-size: 0.9rem;
+    transition: background 0.15s, color 0.15s;
+}
+.task-card-wrapper__drag:active { cursor: grabbing; background: var(--c-primary-bg); color: var(--c-primary); }
+.task-card-wrapper__drag svg { width: 14px; height: 14px; }
+@media (max-width: 768px) {
+    .task-card-wrapper__drag { display: flex; }
+    .task-card-wrapper .task-card { border-radius: 0 var(--radius) var(--radius) 0; }
+}
 .task-card-wrapper__delete {
     position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
     background: var(--c-danger); color: #fff; display: flex; align-items: center; justify-content: center;
     font-size: 1.2rem; font-weight: 600; border-radius: 0 var(--radius) var(--radius) 0;
 }
-.task-card-wrapper .task-card { transition: transform 0.2s ease; position: relative; z-index: 1; }
+.task-card-wrapper .task-card { transition: transform 0.2s ease; position: relative; z-index: 1; flex: 1; min-width: 0; }
+.task-card-wrapper__drag { transition: transform 0.2s ease; position: relative; z-index: 1; }
 @media (min-width: 769px) { .task-card-wrapper__delete { display: none; } }
 
 /* ============= POMODORO ============= */
@@ -798,6 +823,7 @@ a { color: var(--c-primary); text-decoration: none; }
                 <input type="search" class="topbar__search" id="searchInput" placeholder="Search tasks...">
                 <div class="topbar__actions">
                     <button class="btn btn--primary btn--sm" id="addTaskBtn">+ Task</button>
+                    <button class="btn--icon" id="brainDumpBtn" title="Brain Dump" style="font-size:1.2rem">&#128173;</button>
                     <button class="btn--icon" id="focusGameBtn" title="Struggling to focus?" style="font-size:1.2rem">&#129504;</button>
                     <button class="btn--icon" id="reviewBtn" title="Daily Review">&#128203;</button>
                     <button class="btn--icon" id="settingsBtn" title="Settings">&#9881;</button>
@@ -806,10 +832,17 @@ a { color: var(--c-primary); text-decoration: none; }
             </header>
 
             <div class="content" id="contentArea">
-                <div class="intention-banner" id="intentionBanner" hidden>
+                <!-- Active task banner (shows during Pomodoro) -->
+                <div id="activeTaskBanner"></div>
+
+                <!-- Bad day mode banner -->
+                <div id="badDayBanner"></div>
+
+                <div class="intention-banner" id="intentionBanner">
                     <span class="intention-banner__icon">&#127919;</span>
                     <span class="intention-banner__label">Today's focus:</span>
                     <span class="intention-banner__text" id="intentionText"></span>
+                    <span class="intention-banner__edit" id="intentionEditHint">tap to edit</span>
                 </div>
 
                 <div class="focus-nudge" id="focusNudge">
@@ -821,12 +854,19 @@ a { color: var(--c-primary); text-decoration: none; }
                     <span class="focus-nudge__arrow">&#8250;</span>
                 </div>
 
+                <!-- Focus mode bar (shown when focus mode active) -->
+                <div id="focusModeBar"></div>
+
                 <div class="filters" id="filterBar">
                     <button class="filter-btn active" data-filter="all">All</button>
                     <button class="filter-btn" data-filter="high">High Priority</button>
                     <button class="filter-btn" data-filter="today">Today</button>
                     <button class="filter-btn" data-filter="done">Done</button>
+                    <button class="filter-btn" data-filter="focus">&#127919; Focus</button>
                 </div>
+
+                <!-- Brain dump mode -->
+                <div id="brainDumpArea"></div>
 
                 <div class="quick-add" id="quickAdd">
                     <span class="quick-add__icon">&#9998;</span>
@@ -834,6 +874,7 @@ a { color: var(--c-primary); text-decoration: none; }
                     <div class="quick-add__extras">
                         <input class="quick-add__time" id="quickAddTime" type="time" title="Schedule time (optional)">
                         <button class="quick-add__submit" id="quickAddBtn">Add</button>
+                        <div id="pickForMeArea"></div>
                     </div>
                 </div>
 
@@ -1108,6 +1149,7 @@ class TaskManager {
         if (filter === 'high') list = list.filter(t => this.score(t) >= 10 && !t.done);
         else if (filter === 'today') list = list.filter(t => t.day === 'Today' && !t.done);
         else if (filter === 'done') list = list.filter(t => t.done);
+        else if (filter === 'focus') { list = list.filter(t => !t.done); list = this.sorted(list).slice(0, 3); return list; }
         else list = list.filter(t => !t.done);
         if (query) {
             const q = query.toLowerCase();
@@ -1384,6 +1426,7 @@ class PomodoroManager {
         this._persist();
         this._tick();
         this.bus.emit('pomodoro:started', this.state);
+        this.bus.emit('task:started', task);
     }
 
     _tick() {
@@ -1633,18 +1676,21 @@ const TouchDrag = {
     //   onDrop(draggedId, target): called when dropped on a target element or zone
     //   dropZones: selector for drop zones (if different from items)
     //   getClone(el): optional, returns clone element for drag ghost
-    setup(container, { items, dropZones, onDrop }) {
+    setup(container, { items, handles, dropZones, onDrop }) {
         let dragEl = null, ghost = null, dragId = null, startX, startY, moved = false;
 
-        container.querySelectorAll(items).forEach(el => {
+        // If handles provided, only start drag from handle elements; otherwise from items directly
+        const startSelector = handles || items;
+        container.querySelectorAll(startSelector).forEach(el => {
             el.addEventListener('touchstart', (e) => {
                 if (e.touches.length !== 1) return;
                 const touch = e.touches[0];
                 startX = touch.clientX;
                 startY = touch.clientY;
                 moved = false;
-                dragEl = el;
-                dragId = el.dataset.id ? Number(el.dataset.id) : el.dataset.time || null;
+                // The dragged element is the item (parent wrapper), not the handle itself
+                dragEl = handles ? el.closest(items) || el : el;
+                dragId = el.dataset.id ? Number(el.dataset.id) : (dragEl.dataset.id ? Number(dragEl.dataset.id) : el.dataset.time || null);
             }, { passive: true });
         });
 
@@ -1729,7 +1775,8 @@ class RankedViewRenderer {
         const subtaskPct = subtaskTotal ? Math.round(subtaskDone / subtaskTotal * 100) : 0;
         return `<div class="task-card-wrapper" data-id="${t.id}">
             <div class="task-card-wrapper__delete">&#128465; Delete</div>
-            <div class="task-card${t.done ? ' done' : ''}" data-id="${t.id}" draggable="${!t.done}">
+            ${!t.done ? `<div class="task-card-wrapper__drag" data-drag-handle data-id="${t.id}" draggable="true" title="Hold to reorder"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg></div>` : ''}
+            <div class="task-card${t.done ? ' done' : ''}" data-id="${t.id}">
                 <button class="btn btn--ghost btn--sm" data-action="edit" data-id="${t.id}" title="Edit" style="flex-shrink:0">&#9998;</button>
                 <div class="task-card__check${t.done ? ' done' : ''}" data-action="toggle" data-id="${t.id}">${t.done ? '&#10003;' : ''}</div>
                 <div class="task-card__body">
@@ -1750,6 +1797,7 @@ class RankedViewRenderer {
                     ${subtaskTotal ? `<div class="subtask-bar"><div class="subtask-bar__fill" style="width:${subtaskPct}%"></div></div>` : ''}
                 </div>
                 <div class="task-card__actions">
+                    ${!t.done ? `<button class="btn btn--ghost btn--sm" data-action="micro" data-id="${t.id}" title="Just 5 minutes">5m</button>` : ''}
                     ${!t.done ? `<button class="btn btn--ghost btn--sm" data-action="launch" data-id="${t.id}" title="Launch countdown">&#128640;</button>` : ''}
                     <button class="btn btn--ghost btn--sm" data-action="focus" data-id="${t.id}" title="Focus">&#127813;</button>
                     <button class="btn btn--ghost btn--sm" data-action="skip" data-id="${t.id}" title="Skip">&#9193;</button>
@@ -1771,24 +1819,31 @@ class RankedViewRenderer {
                 else if (action === 'skip') this.tm.skip(id);
                 else if (action === 'focus') this.bus.emit('ui:startPomodoro', id);
                 else if (action === 'launch') this.bus.emit('ui:launchTask', id);
+                else if (action === 'micro') this.bus.emit('ui:microTimer', id);
             });
         });
 
         // Swipe-to-delete (horizontal-only — vertical scrolling is never blocked)
         this.container.querySelectorAll('.task-card-wrapper').forEach(wrapper => {
             const card = wrapper.querySelector('.task-card');
+            const handle = wrapper.querySelector('.task-card-wrapper__drag');
             const id = Number(wrapper.dataset.id);
             let startX = 0, startY = 0, currentX = 0, swiping = false, directionLocked = false, isHorizontal = false;
 
-            wrapper.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                currentX = 0;
-                swiping = true;
-                directionLocked = false;
-                isHorizontal = false;
-                card.style.transition = 'none';
-            }, { passive: true });
+            // Don't start swipe from the drag handle (that's for reordering)
+            const swipeStartEls = [card];
+            swipeStartEls.forEach(el => {
+                el.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    currentX = 0;
+                    swiping = true;
+                    directionLocked = false;
+                    isHorizontal = false;
+                    card.style.transition = 'none';
+                    if (handle) handle.style.transition = 'none';
+                }, { passive: true });
+            });
 
             wrapper.addEventListener('touchmove', (e) => {
                 if (!swiping) return;
@@ -1807,22 +1862,31 @@ class RankedViewRenderer {
                 if (currentX < -100) currentX = -100;
                 e.preventDefault(); // block scroll only when swiping horizontally
                 card.style.transform = `translateX(${currentX}px)`;
+                if (handle) handle.style.transform = `translateX(${currentX}px)`;
             }, { passive: false });
+
+            const setTransform = (val, transition) => {
+                card.style.transition = transition;
+                card.style.transform = val;
+                if (handle) {
+                    handle.style.transition = transition;
+                    handle.style.transform = val;
+                }
+            };
 
             const endSwipe = () => {
                 if (!swiping) return;
                 swiping = false;
-                card.style.transition = 'transform 0.2s ease';
                 if (isHorizontal && currentX < -60) {
-                    card.style.transform = 'translateX(-80px)';
+                    setTransform('translateX(-80px)', 'transform 0.2s ease');
                     if (confirm('Are you sure you want to delete this task?')) {
-                        card.style.transform = 'translateX(-100%)';
+                        setTransform('translateX(-100%)', 'transform 0.2s ease');
                         setTimeout(() => { this.tm.delete(id); }, 200);
                     } else {
-                        card.style.transform = 'translateX(0)';
+                        setTransform('translateX(0)', 'transform 0.2s ease');
                     }
                 } else {
-                    card.style.transform = 'translateX(0)';
+                    setTransform('translateX(0)', 'transform 0.2s ease');
                 }
             };
             wrapper.addEventListener('touchend', endSwipe);
@@ -1834,44 +1898,51 @@ class RankedViewRenderer {
             });
         });
 
-        // Drag and drop
-        this.container.querySelectorAll('.task-card[draggable="true"]').forEach(card => {
-            card.addEventListener('dragstart', (e) => {
-                this._draggedId = Number(card.dataset.id);
-                card.classList.add('dragging');
+        // Drag and drop (desktop) — initiated from handle only
+        this.container.querySelectorAll('[data-drag-handle]').forEach(handle => {
+            const wrapper = handle.closest('.task-card-wrapper');
+            const card = wrapper.querySelector('.task-card');
+            handle.addEventListener('dragstart', (e) => {
+                this._draggedId = Number(handle.dataset.id);
+                wrapper.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
             });
-            card.addEventListener('dragend', () => { card.classList.remove('dragging'); this._draggedId = null; });
-            card.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
-            card.addEventListener('drop', (e) => {
+            handle.addEventListener('dragend', () => { wrapper.classList.remove('dragging'); this._draggedId = null; });
+        });
+        // Drop targets are the wrappers
+        this.container.querySelectorAll('.task-card-wrapper').forEach(wrapper => {
+            wrapper.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+            wrapper.addEventListener('drop', (e) => {
                 e.preventDefault();
-                const targetId = Number(card.dataset.id);
+                const targetId = Number(wrapper.dataset.id);
                 if (this._draggedId === null || this._draggedId === targetId) return;
                 const dragged = this.tm.getById(this._draggedId);
                 const target = this.tm.getById(targetId);
                 if (!dragged || !target || dragged.done || target.done) return;
-                // Swap manual ranks
-                const cards = [...this.container.querySelectorAll('.task-card')];
-                const dragIdx = cards.findIndex(c => Number(c.dataset.id) === this._draggedId);
-                const targetIdx = cards.findIndex(c => Number(c.dataset.id) === targetId);
+                const wrappers = [...this.container.querySelectorAll('.task-card-wrapper')];
+                const dragIdx = wrappers.findIndex(w => Number(w.dataset.id) === this._draggedId);
+                const targetIdx = wrappers.findIndex(w => Number(w.dataset.id) === targetId);
                 dragged.manualRank = targetIdx;
                 target.manualRank = dragIdx;
                 this.tm.save();
             });
         });
 
-        // Touch drag support for mobile
+        // Touch drag support for mobile — only via the drag handle grip
         TouchDrag.setup(this.container, {
-            items: '.task-card[draggable="true"]',
+            items: '.task-card-wrapper',
+            handles: '[data-drag-handle]',
             onDrop: (draggedId, targetEl) => {
-                const targetId = Number(targetEl.dataset.id);
+                const targetWrapper = targetEl.closest('.task-card-wrapper');
+                const targetCard = targetWrapper ? targetWrapper.querySelector('.task-card') : targetEl;
+                const targetId = Number((targetWrapper || targetEl).dataset.id);
                 if (!draggedId || draggedId === targetId) return;
                 const dragged = this.tm.getById(draggedId);
                 const target = this.tm.getById(targetId);
                 if (!dragged || !target || dragged.done || target.done) return;
-                const cards = [...this.container.querySelectorAll('.task-card')];
-                const dragIdx = cards.findIndex(c => Number(c.dataset.id) === draggedId);
-                const targetIdx = cards.findIndex(c => Number(c.dataset.id) === targetId);
+                const wrappers = [...this.container.querySelectorAll('.task-card-wrapper')];
+                const dragIdx = wrappers.findIndex(w => Number(w.dataset.id) === draggedId);
+                const targetIdx = wrappers.findIndex(w => Number(w.dataset.id) === targetId);
                 dragged.manualRank = targetIdx;
                 target.manualRank = dragIdx;
                 this.tm.save();
@@ -2209,8 +2280,16 @@ class PriorityFlowApp {
         this.bus.on('ui:editTask', (id) => this._showTaskModal(id));
         this.bus.on('ui:startPomodoro', (id) => this._showPomodoroSetup(id));
         this.bus.on('ui:launchTask', (id) => { const t = this.tm.getById(id); if (t) this._launchCountdown(t); });
+        this.bus.on('ui:microTimer', (id) => { const t = this.tm.getById(id); if (t) this._startMicroTimer(t); });
         this.bus.on('morning:completed', (data) => this._onMorningComplete(data));
-        this.bus.on('pomodoro:started', () => this._showPomodoroTimer());
+        this.bus.on('pomodoro:started', (state) => { this._showPomodoroTimer(); this._updateActiveTaskBanner(state); });
+        this.bus.on('pomodoro:tick', (state) => this._updateActiveTaskBanner(state));
+        this.bus.on('pomodoro:sessionComplete', () => { document.getElementById('activeTaskBanner').innerHTML = ''; });
+        this.bus.on('task:started', (task) => this._celebrateStart(task));
+
+        // Intention edit + Brain dump mode init
+        this._initIntentionEdit();
+        this._initBrainDump();
 
         // Task notification system & auto-launch
         this._startTaskNotifier();
@@ -2245,6 +2324,7 @@ class PriorityFlowApp {
 
         // Buttons
         document.getElementById('addTaskBtn').addEventListener('click', () => this._showTaskModal());
+        document.getElementById('brainDumpBtn').addEventListener('click', () => this._toggleBrainDump());
         document.getElementById('focusGameBtn').addEventListener('click', () => this._showFocusGames());
         document.getElementById('focusNudge').addEventListener('click', () => this._showFocusGames());
         document.getElementById('reviewBtn').addEventListener('click', () => this._showReviewModal());
@@ -2344,6 +2424,9 @@ class PriorityFlowApp {
         this._renderWeeklyStreak();
         this._renderReviewDots();
         this._updateIntention();
+        this._renderPickForMe();
+        this._renderFocusModeBar();
+        this._renderBadDayBanner();
     }
 
     _renderCurrentView() {
@@ -2388,10 +2471,15 @@ class PriorityFlowApp {
             const rId = h.recurrence?.recurrenceId || h.id;
             if (!seen.has(rId)) { seen.add(rId); unique.push(h); }
         });
-        el.innerHTML = unique.slice(0, 5).map(h => `<div class="habit-item">
-            <span>${esc(h.title)}</span>
-            <span class="habit-item__streak">&#128293; ${h.streak?.current || 0}d</span>
-        </div>`).join('');
+        el.innerHTML = unique.slice(0, 5).map(h => {
+            const s = h.streak?.current || 0;
+            const icon = s === 0 ? '&#127793;' : '&#128293;';
+            const label = s === 0 ? 'restart anytime' : `${s}d`;
+            return `<div class="habit-item">
+                <span>${esc(h.title)}</span>
+                <span class="habit-item__streak">${icon} ${label}</span>
+            </div>`;
+        }).join('');
     }
 
     _renderWeeklyStreak() {
@@ -2413,13 +2501,28 @@ class PriorityFlowApp {
         stored.current = streak;
         this.store.set('pf.weeklyStreak', stored);
 
+        // Compassionate streak messaging (no shame for breaks)
+        let streakMsg, streakIcon;
+        if (streak === 0) {
+            streakIcon = '&#127793;'; // seedling
+            streakMsg = 'Fresh start today — every day is a new chance';
+        } else if (streak === 1) {
+            streakIcon = '&#127793;';
+            streakMsg = 'Day 1 — you showed up. That matters.';
+        } else if (streak < stored.best && stored.best > 3) {
+            streakIcon = '&#128293;';
+            streakMsg = `${streak} day${streak !== 1 ? 's' : ''} — building momentum!`;
+        } else {
+            streakIcon = '&#128293;';
+            streakMsg = `${streak} day${streak !== 1 ? 's' : ''} — incredible consistency!`;
+        }
+
         el.innerHTML = `<div class="weekly-streak">
-            <span class="weekly-streak__flame">&#128293;</span>
+            <span class="weekly-streak__flame">${streakIcon}</span>
             <div>
-                <div class="weekly-streak__count">${streak} day${streak !== 1 ? 's' : ''}</div>
-                <div class="weekly-streak__label">completion streak</div>
+                <div class="weekly-streak__count">${streakMsg}</div>
+                <div class="weekly-streak__label">${stored.best > 0 ? `Personal best: ${stored.best}d` : 'Start your journey'}</div>
             </div>
-            <div class="weekly-streak__best">Best: ${stored.best}d</div>
         </div>`;
     }
 
@@ -2433,13 +2536,176 @@ class PriorityFlowApp {
 
     _updateIntention() {
         const data = this.morning.getToday();
-        const banner = document.getElementById('intentionBanner');
+        const textEl = document.getElementById('intentionText');
+        const hintEl = document.getElementById('intentionEditHint');
         if (data && data.intention) {
-            document.getElementById('intentionText').textContent = data.intention;
-            banner.hidden = false;
+            textEl.textContent = data.intention;
+            hintEl.textContent = '✎';
         } else {
-            banner.hidden = true;
+            textEl.textContent = 'Tap to set your focus...';
+            textEl.style.opacity = '0.5';
+            hintEl.textContent = '+';
         }
+    }
+
+    _initIntentionEdit() {
+        const banner = document.getElementById('intentionBanner');
+        banner.addEventListener('click', () => {
+            const textEl = document.getElementById('intentionText');
+            const hintEl = document.getElementById('intentionEditHint');
+            // Already editing?
+            if (banner.querySelector('.intention-banner__input')) return;
+
+            const current = this.morning.getToday();
+            const currentText = (current && current.intention) || '';
+
+            textEl.style.display = 'none';
+            hintEl.style.display = 'none';
+
+            const input = document.createElement('input');
+            input.className = 'intention-banner__input';
+            input.value = currentText;
+            input.placeholder = "What's your main focus today?";
+            input.maxLength = 120;
+            banner.appendChild(input);
+            input.focus();
+
+            const save = () => {
+                const val = input.value.trim();
+                input.remove();
+                textEl.style.display = '';
+                hintEl.style.display = '';
+
+                // Save to morning data
+                const data = this.morning.getToday() || {};
+                const today = getDateStr();
+                const morningData = this.store.get('pf.morning', {});
+                morningData[today] = { mood: data.mood || 3, energy: data.energy || 3, intention: val };
+                this.store.set('pf.morning', morningData);
+
+                textEl.style.opacity = '';
+                if (val) {
+                    textEl.textContent = val;
+                    hintEl.textContent = '✎';
+                } else {
+                    textEl.textContent = 'Tap to set your focus...';
+                    textEl.style.opacity = '0.5';
+                    hintEl.textContent = '+';
+                }
+            };
+
+            input.addEventListener('blur', save);
+            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+        });
+    }
+
+    // ============= ACTIVE TASK BANNER (during Pomodoro) =============
+    _updateActiveTaskBanner(state) {
+        if (!state || !state.isRunning) return;
+        const banner = document.getElementById('activeTaskBanner');
+        const min = Math.floor(state.remaining / 60);
+        const sec = String(state.remaining % 60).padStart(2, '0');
+        const phase = state.phase === 'focus' ? '&#127813; Focusing' : '&#9749; Break';
+        banner.innerHTML = `<div class="active-task-banner">
+            <span>${phase}</span>
+            <div class="active-task-banner__info">
+                <strong>${esc(state.taskTitle)}</strong>
+            </div>
+            <div class="active-task-banner__time">${min}:${sec}</div>
+        </div>`;
+    }
+
+    // ============= CELEBRATE STARTING (effort-based celebration) =============
+    _celebrateStart(task) {
+        const msgs = [
+            'You started! That\'s the hardest part.',
+            'Starting is a superpower. Go you!',
+            'First step taken. You\'re already winning.',
+            'The hardest part is over — you began!',
+        ];
+        this.motivational.toast(msgs[Math.floor(Math.random() * msgs.length)], 'success');
+    }
+
+    // ============= PICK FOR ME =============
+    _renderPickForMe() {
+        const el = document.getElementById('pickForMeArea');
+        const undone = this.tm.sorted(this.tm.tasks.filter(t => !t.done));
+        if (undone.length === 0) { el.innerHTML = ''; return; }
+        el.innerHTML = `<div class="pick-for-me"><button class="btn btn--primary" id="pickForMeBtn">&#127922; Pick</button></div>`;
+        el.querySelector('#pickForMeBtn').addEventListener('click', () => {
+            const task = undone[0];
+            this.motivational.toast(`Let's do: "${task.title}"`, 'success');
+            this._launchCountdown(task);
+        });
+    }
+
+    // ============= FOCUS MODE BAR =============
+    _renderFocusModeBar() {
+        const el = document.getElementById('focusModeBar');
+        if (this.currentFilter !== 'focus') { el.innerHTML = ''; return; }
+        const top3 = this.tm.sorted(this.tm.tasks.filter(t => !t.done)).slice(0, 3);
+        el.innerHTML = `<div class="focus-mode-bar">
+            <span>&#127919;</span> <strong>Focus Mode</strong> — showing your top ${top3.length} task${top3.length !== 1 ? 's' : ''}. Everything else is hidden.
+            <button class="btn btn--ghost btn--sm" id="exitFocus">Exit Focus</button>
+        </div>`;
+        el.querySelector('#exitFocus').addEventListener('click', () => {
+            this.currentFilter = 'all';
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+            this._renderAll();
+        });
+    }
+
+    // ============= BAD DAY BANNER =============
+    _renderBadDayBanner() {
+        const el = document.getElementById('badDayBanner');
+        const data = this.morning.getToday();
+        if (!data || data.energy > 2) { el.innerHTML = ''; return; }
+        const undone = this.tm.tasks.filter(t => t.day === 'Today' && !t.done).length;
+        el.innerHTML = `<div class="bad-day-banner">
+            <span>&#128156;</span> Low energy day detected. Showing only easy tasks. ${undone > 3 ? 'Consider moving some to tomorrow.' : 'You got this.'}
+            <button class="btn btn--ghost btn--sm" id="badDayDismiss">Dismiss</button>
+        </div>`;
+        el.querySelector('#badDayDismiss').addEventListener('click', () => { el.innerHTML = ''; });
+    }
+
+    // ============= BRAIN DUMP MODE =============
+    _initBrainDump() {
+        const el = document.getElementById('brainDumpArea');
+        el.innerHTML = `<div class="brain-dump" id="brainDumpWidget" style="display:none">
+            <div class="brain-dump__header">
+                <span>&#129504; Brain Dump</span>
+                <span class="brain-dump__count" id="bdCount">0 added</span>
+                <button class="btn btn--ghost btn--sm" id="bdClose">&times;</button>
+            </div>
+            <input class="brain-dump__input" id="bdInput" type="text" placeholder="Type a task and hit Enter... keep going!" autocomplete="off">
+        </div>`;
+
+        const widget = el.querySelector('#brainDumpWidget');
+        const input = el.querySelector('#bdInput');
+        let count = 0;
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && input.value.trim()) {
+                this.tm.add({ title: input.value.trim(), day: 'Backlog', urgency: 3, impact: 3, energy: 2, interest: 3 });
+                input.value = '';
+                count++;
+                el.querySelector('#bdCount').textContent = `${count} added`;
+                this.motivational.toast(`+1 captured!`, 'success');
+            }
+        });
+        el.querySelector('#bdClose').addEventListener('click', () => {
+            widget.style.display = 'none';
+            if (count > 0) this.motivational.toast(`${count} tasks captured! Now prioritize them.`, 'success');
+            count = 0;
+        });
+    }
+
+    _toggleBrainDump() {
+        const widget = document.getElementById('brainDumpWidget');
+        if (!widget) return;
+        const show = widget.style.display === 'none';
+        widget.style.display = show ? 'block' : 'none';
+        if (show) document.getElementById('bdInput').focus();
     }
 
     _updateUserUI() {
@@ -2644,8 +2910,12 @@ class PriorityFlowApp {
             t.manualRank = null; // Reset manual ranks so scoring takes over
         });
         if (energy <= 2) {
-            // Boost low-energy tasks
+            // Bad day mode: boost low-energy tasks to top, auto-activate focus mode
             this.tm.tasks.filter(t => !t.done && t.energy === 1 && t.day === 'Today').forEach((t, i) => { t.manualRank = i; });
+            // Auto-switch to focus filter to reduce overwhelm
+            this.currentFilter = 'focus';
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'focus'));
+            this.motivational.toast("Low energy day — I've reduced your view to just 3 tasks. Be kind to yourself.", 'success');
         } else if (energy >= 4) {
             // Boost high-energy tasks
             this.tm.tasks.filter(t => !t.done && t.energy === 3 && t.day === 'Today').forEach((t, i) => { t.manualRank = i; });
@@ -3083,15 +3353,106 @@ class PriorityFlowApp {
         // Hide the nudge bar
         const nudge = document.getElementById('focusNudge');
         if (nudge) nudge.classList.add('hidden');
-        // Highlight the top undone task
-        setTimeout(() => {
-            const topCard = document.querySelector('.task-card-wrapper .task-card:not(.done)');
-            if (topCard) {
-                topCard.classList.add('highlight-next');
-                topCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => topCard.classList.remove('highlight-next'), 6500);
+
+        // Log game play count
+        const dateKey = 'pf.gamePlays.' + getDateStr();
+        const plays = (this.store.get(dateKey, 0)) + 1;
+        this.store.set(dateKey, plays);
+
+        // After 3+ games today, gently redirect
+        if (plays >= 3) {
+            this.motivational.toast("You've played 3 games today — let's channel that energy into a task!", 'warning');
+        }
+
+        // Show post-game "Start this now?" prompt with top task
+        const topTask = this.tm.sorted(this.tm.tasks.filter(t => t.day === 'Today' && !t.done))[0]
+                     || this.tm.sorted(this.tm.tasks.filter(t => !t.done))[0];
+        if (topTask) {
+            setTimeout(() => this._showPostGamePrompt(topTask), 400);
+        }
+    }
+
+    _showPostGamePrompt(task) {
+        const banner = document.getElementById('activeTaskBanner');
+        const score = this.tm.score(task);
+        banner.innerHTML = `<div class="postgame-prompt">
+            <div class="postgame-prompt__text">
+                <span>&#127919;</span> Brain warmed up! Start this now?
+            </div>
+            <div class="postgame-prompt__task">
+                <strong>${esc(task.title)}</strong>
+                <span class="badge badge--score">${score} pts</span>
+            </div>
+            <div class="postgame-prompt__actions">
+                <button class="btn btn--primary btn--sm" id="pgStart">&#128640; Start</button>
+                <button class="btn btn--secondary btn--sm" id="pg5min">Just 5 min</button>
+                <button class="btn btn--ghost btn--sm" id="pgDismiss">Later</button>
+            </div>
+        </div>`;
+        banner.querySelector('#pgStart').addEventListener('click', () => {
+            banner.innerHTML = '';
+            this._launchCountdown(task);
+        });
+        banner.querySelector('#pg5min').addEventListener('click', () => {
+            banner.innerHTML = '';
+            this._startMicroTimer(task);
+        });
+        banner.querySelector('#pgDismiss').addEventListener('click', () => {
+            banner.innerHTML = '';
+        });
+    }
+
+    // --- "Just 5 minutes" micro-timer ---
+    _startMicroTimer(task) {
+        if (!task) return;
+        const banner = document.getElementById('activeTaskBanner');
+        let remaining = 5 * 60;
+        const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+        const render = () => {
+            banner.innerHTML = `<div class="active-task-banner">
+                <span>&#9203;</span>
+                <div class="active-task-banner__info">
+                    <strong>Just 5 min:</strong> ${esc(task.title)}
+                </div>
+                <div class="active-task-banner__time" id="microTime">${fmt(remaining)}</div>
+                <button class="btn btn--ghost btn--sm" id="microDone">&#10003; Done</button>
+                <button class="btn btn--ghost btn--sm" id="microExtend">+5 min</button>
+                <button class="btn btn--ghost btn--sm" id="microStop">Stop</button>
+            </div>`;
+            banner.querySelector('#microDone').addEventListener('click', () => {
+                clearInterval(ivl);
+                banner.innerHTML = '';
+                this.tm.toggle(task.id);
+                this.motivational.toast('You started AND finished! Amazing.', 'success');
+            });
+            banner.querySelector('#microExtend').addEventListener('click', () => {
+                remaining += 5 * 60;
+                this.motivational.toast('Momentum! 5 more minutes added.', 'success');
+            });
+            banner.querySelector('#microStop').addEventListener('click', () => {
+                clearInterval(ivl);
+                banner.innerHTML = '';
+                this.motivational.toast('Great start! Even a little progress counts.', 'success');
+            });
+        };
+        render();
+
+        // Celebrate starting the task
+        this.bus.emit('task:started', task);
+
+        const ivl = setInterval(() => {
+            remaining--;
+            const timeEl = document.getElementById('microTime');
+            if (timeEl) timeEl.textContent = fmt(remaining);
+            if (remaining <= 0) {
+                clearInterval(ivl);
+                banner.innerHTML = '';
+                this.motivational.toast("5 minutes done! You proved you could start. Keep going?", 'success');
+                // Offer to continue with Pomodoro
+                this._showPomodoroSetup(task.id);
             }
-        }, 300);
+        }, 1000);
     }
 
     // --- Countdown Launcher ---
