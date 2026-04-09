@@ -425,14 +425,19 @@ a { color: var(--c-primary); text-decoration: none; }
 .active-task-banner {
     background: linear-gradient(135deg, var(--c-primary), #7B61FF); color: #fff;
     border-radius: var(--radius); padding: 0.65rem 1rem; margin-bottom: 0.75rem;
-    display: flex; align-items: center; gap: 0.75rem; cursor: pointer;
-    transition: var(--transition); animation: fadeIn 0.3s ease;
+    display: flex; align-items: center; gap: 0.75rem;
 }
 .active-task-banner:hover { box-shadow: 0 4px 16px rgba(91,91,255,0.3); }
-.active-task-banner__icon { font-size: 1.1rem; }
-.active-task-banner__label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.8; }
-.active-task-banner__title { font-weight: 600; font-size: 0.9rem; }
-.active-task-banner__time { margin-left: auto; font-size: 0.8rem; font-weight: 700; opacity: 0.85; flex-shrink: 0; }
+.active-task-banner__info { flex: 1; min-width: 0; }
+.active-task-banner__info strong { font-weight: 600; font-size: 0.9rem; }
+.active-task-banner__time { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.active-task-banner__controls { display: flex; gap: 0.35rem; flex-shrink: 0; }
+.active-task-banner__controls button {
+    background: rgba(255,255,255,0.2); color: #fff; border: none; border-radius: 6px;
+    padding: 0.25rem 0.5rem; font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s;
+}
+.active-task-banner__controls button:hover { background: rgba(255,255,255,0.35); }
 
 /* ============= PICK FOR ME / FOCUS MODE ============= */
 .pick-for-me {
@@ -2314,6 +2319,7 @@ class PriorityFlowApp {
         this.bus.on('pomodoro:started', (state) => { this._showPomodoroTimer(); this._updateActiveTaskBanner(state); });
         this.bus.on('pomodoro:tick', (state) => this._updateActiveTaskBanner(state));
         this.bus.on('pomodoro:sessionComplete', () => { document.getElementById('activeTaskBanner').innerHTML = ''; });
+        this.bus.on('pomodoro:stopped', () => { document.getElementById('activeTaskBanner').innerHTML = ''; });
         this.bus.on('task:started', (task) => this._celebrateStart(task));
 
         // Intention edit + Brain dump mode init
@@ -2634,14 +2640,42 @@ class PriorityFlowApp {
         const banner = document.getElementById('activeTaskBanner');
         const min = Math.floor(state.remaining / 60);
         const sec = String(state.remaining % 60).padStart(2, '0');
-        const phase = state.phase === 'focus' ? '&#127813; Focusing' : '&#9749; Break';
-        banner.innerHTML = `<div class="active-task-banner">
-            <span>${phase}</span>
-            <div class="active-task-banner__info">
-                <strong>${esc(state.taskTitle)}</strong>
-            </div>
-            <div class="active-task-banner__time">${min}:${sec}</div>
-        </div>`;
+        const timeStr = `${String(min).padStart(2, '0')}:${sec}`;
+
+        // Only rebuild DOM on first render or phase change
+        const existing = banner.querySelector('.active-task-banner');
+        if (!existing || existing.dataset.phase !== state.phase || existing.dataset.taskId !== String(state.taskId)) {
+            const phase = state.phase === 'focus' ? '&#127813; Focusing' : '&#9749; Break';
+            const pauseLabel = state.isPaused ? '&#9654; Resume' : '&#10074;&#10074; Pause';
+            banner.innerHTML = `<div class="active-task-banner" data-phase="${state.phase}" data-task-id="${state.taskId}">
+                <span>${phase}</span>
+                <div class="active-task-banner__info">
+                    <strong>${esc(state.taskTitle)}</strong>
+                </div>
+                <div class="active-task-banner__time" id="bannerTime">${timeStr}</div>
+                <div class="active-task-banner__controls">
+                    <button id="bannerPause">${pauseLabel}</button>
+                    <button id="bannerStop">&#9632; Stop</button>
+                </div>
+            </div>`;
+            banner.querySelector('#bannerPause').addEventListener('click', () => {
+                if (this.pomo.state?.isPaused) {
+                    this.pomo.resume();
+                    banner.querySelector('#bannerPause').innerHTML = '&#10074;&#10074; Pause';
+                } else {
+                    this.pomo.pause();
+                    banner.querySelector('#bannerPause').innerHTML = '&#9654; Resume';
+                }
+            });
+            banner.querySelector('#bannerStop').addEventListener('click', () => {
+                this.pomo.stop();
+                banner.innerHTML = '';
+            });
+        } else {
+            // Just update the time — no DOM rebuild, no blink
+            const timeEl = banner.querySelector('#bannerTime');
+            if (timeEl) timeEl.textContent = timeStr;
+        }
     }
 
     // ============= CELEBRATE STARTING (effort-based celebration) =============
