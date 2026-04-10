@@ -214,7 +214,7 @@ a { color: var(--c-primary); text-decoration: none; }
 .task-card {
     background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
     padding: 0.85rem 1rem; display: flex; align-items: flex-start; gap: 0.75rem;
-    transition: var(--transition); cursor: default;
+    transition: var(--transition); cursor: default; flex-wrap: wrap;
 }
 .task-card:hover { border-color: var(--c-primary-light); box-shadow: 0 2px 8px var(--c-shadow); }
 .task-card.done { background: var(--c-surface); }
@@ -246,6 +246,14 @@ a { color: var(--c-primary); text-decoration: none; }
 .badge--day { background: var(--c-primary-bg); color: var(--c-primary); }
 
 /* Subtask progress */
+.task-progress { width: 100%; margin-top: 0.45rem; }
+.task-progress__bar { width: 100%; height: 5px; background: var(--c-border); border-radius: 3px; overflow: hidden; }
+.task-progress__fill { height: 100%; border-radius: 3px; transition: width 0.3s; background: var(--c-success); }
+.task-progress__fill--low { background: var(--c-danger); }
+.task-progress__fill--mid { background: var(--c-warning); }
+.task-progress__fill--high { background: var(--c-success); }
+.task-progress__label { font-size: 0.65rem; color: var(--c-text-muted); margin-top: 0.15rem; display: flex; justify-content: space-between; }
+/* Legacy subtask-bar compat */
 .subtask-bar { width: 100%; height: 4px; background: var(--c-border); border-radius: 2px; margin-top: 0.45rem; overflow: hidden; }
 .subtask-bar__fill { height: 100%; background: var(--c-success); border-radius: 2px; transition: width 0.3s; }
 
@@ -260,6 +268,31 @@ a { color: var(--c-primary); text-decoration: none; }
 
 /* Drag-over drop indicator for reordering */
 .task-card-wrapper.drag-over { box-shadow: 0 -3px 0 0 var(--c-primary); }
+
+/* ============= CALENDAR VIEW ============= */
+.calendar { user-select: none; }
+.calendar__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.calendar__title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.calendar__nav { display: flex; gap: 0.35rem; }
+.calendar__nav button { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.8rem; cursor: pointer; color: var(--c-text); }
+.calendar__nav button:hover { background: var(--c-surface-hover); }
+.calendar__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--c-border); border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; }
+.calendar__day-header { background: var(--c-surface); padding: 0.4rem; text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; }
+.calendar__cell { background: var(--c-bg); min-height: 80px; padding: 0.3rem; cursor: pointer; transition: background 0.15s; position: relative; }
+.calendar__cell:hover { background: var(--c-surface); }
+.calendar__cell--other { opacity: 0.4; }
+.calendar__cell--today { background: var(--c-primary-bg); }
+.calendar__cell--today:hover { background: rgba(91,91,255,0.15); }
+.calendar__date { font-size: 0.75rem; font-weight: 600; margin-bottom: 0.2rem; }
+.calendar__cell--today .calendar__date { color: var(--c-primary); font-weight: 700; }
+.calendar__event { font-size: 0.65rem; padding: 0.15rem 0.3rem; border-radius: 3px; margin-bottom: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.calendar__event--task { background: var(--c-primary-bg); color: var(--c-primary); }
+.calendar__event--meeting { background: var(--c-warning-bg); color: var(--c-warning); }
+.calendar__event--done { background: var(--c-success-bg); color: var(--c-success); text-decoration: line-through; opacity: 0.7; }
+.calendar__event--overdue { background: var(--c-danger-bg); color: var(--c-danger); }
+.calendar__more { font-size: 0.6rem; color: var(--c-text-muted); padding: 0.1rem 0.3rem; }
+.calendar__import { margin-top: 1rem; text-align: center; }
+@media (max-width: 768px) { .calendar__cell { min-height: 60px; } }
 
 /* ============= EISENHOWER GRID ============= */
 .eisenhower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -301,10 +334,106 @@ a { color: var(--c-primary); text-decoration: none; }
 }
 .stat-card__value { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--c-primary); }
 .stat-card__label { font-size: 0.8rem; color: var(--c-text-muted); margin-top: 0.25rem; font-weight: 500; }
+.stat-card--streak .stat-card__value { color: var(--c-warning); }
 .weekly-chart { display: flex; align-items: flex-end; gap: 0.5rem; height: 120px; padding: 1rem; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); }
 .weekly-chart__bar { flex: 1; background: var(--c-primary-bg); border-radius: 4px 4px 0 0; transition: height 0.5s; position: relative; min-height: 4px; }
 .weekly-chart__bar--today { background: var(--c-primary); }
 .weekly-chart__label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; color: var(--c-text-muted); font-weight: 600; }
+/* Overview infographics */
+.overview-section { margin-bottom: 1.5rem; }
+.overview-section__title { font-size: 0.8rem; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+.progress-ring { display: flex; align-items: center; justify-content: center; gap: 1.5rem; padding: 1.5rem; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); }
+.progress-ring__text { text-align: left; }
+.progress-ring__pct { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--c-primary); }
+.progress-ring__sub { font-size: 0.8rem; color: var(--c-text-muted); }
+.progress-ring svg { transform: rotate(-90deg); }
+.progress-ring__bg { fill: none; stroke: var(--c-border); }
+.progress-ring__fill { fill: none; stroke: var(--c-primary); stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
+.category-bars { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 1rem; }
+.cat-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.cat-bar:last-child { margin-bottom: 0; }
+.cat-bar__label { font-size: 0.75rem; min-width: 80px; color: var(--c-text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-bar__track { flex: 1; height: 8px; background: var(--c-border); border-radius: 4px; overflow: hidden; }
+.cat-bar__fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+.cat-bar__count { font-size: 0.7rem; color: var(--c-text-muted); min-width: 24px; text-align: right; }
+.energy-grid { display: flex; gap: 0.35rem; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 1rem; align-items: flex-end; }
+.energy-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.energy-col__bar { width: 100%; border-radius: 4px; transition: height 0.5s; min-height: 2px; }
+.energy-col__label { font-size: 0.65rem; color: var(--c-text-muted); }
+.focus-sparkline { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+.focus-sparkline svg { width: 100%; height: 60px; }
+.focus-sparkline__path { fill: none; stroke: var(--c-primary); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.focus-sparkline__area { fill: var(--c-primary-bg); opacity: 0.3; }
+.focus-sparkline__dot { fill: var(--c-primary); }
+.focus-sparkline__labels { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--c-text-muted); margin-top: 0.35rem; }
+
+/* ============= MILESTONES ============= */
+.milestone-banner { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.milestone-banner:empty { display: none; }
+.milestone-banner__item { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 20px; font-size: 0.75rem; color: #7C3AED; cursor: pointer; transition: background 0.2s; }
+.milestone-banner__item:hover { background: rgba(139,92,246,0.15); }
+.milestone-banner__countdown { font-weight: 600; }
+.milestone-banner__rush { background: none; border: none; cursor: pointer; font-size: 0.7rem; color: var(--c-danger); padding: 0.1rem 0.3rem; border-radius: 4px; opacity: 0.7; }
+.milestone-banner__rush:hover { opacity: 1; background: var(--c-danger-bg); }
+.badge--milestone { background: rgba(139,92,246,0.12); color: #7C3AED; }
+.calendar__event--milestone { background: rgba(139,92,246,0.15); color: #7C3AED; font-weight: 600; }
+[data-theme="dark"] .milestone-banner__item { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.3); color: #A78BFA; }
+[data-theme="dark"] .badge--milestone { background: rgba(139,92,246,0.2); color: #A78BFA; }
+
+/* ============= TASK DETAIL (expandable) ============= */
+.task-card__detail { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.35s ease; padding: 0; width: 100%; flex-basis: 100%; }
+.task-card__detail.open { max-height: 800px; padding: 0.75rem 0 0.25rem; border-top: 1px solid var(--c-border); margin-top: 0.5rem; }
+.task-detail__section { margin-bottom: 0.75rem; }
+.task-detail__section:last-child { margin-bottom: 0; }
+.task-detail__label { font-size: 0.65rem; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+.task-detail__notes-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.task-detail__note { background: rgba(255,237,178,0.25); border-left: 3px solid #FBBF24; padding: 0.4rem 0.6rem; border-radius: 0 var(--radius-xs) var(--radius-xs) 0; font-size: 0.8rem; color: var(--c-text); line-height: 1.4; }
+[data-theme="dark"] .task-detail__note { background: rgba(251,191,36,0.08); border-left-color: #D97706; }
+.task-detail__note-add { display: flex; gap: 0.35rem; margin-top: 0.35rem; }
+.task-detail__note-input { flex: 1; border: 1px dashed var(--c-border); border-radius: var(--radius-xs); padding: 0.3rem 0.5rem; font-size: 0.75rem; background: transparent; color: var(--c-text); outline: none; }
+.task-detail__note-input:focus { border-color: var(--c-primary); border-style: solid; }
+.task-detail__note-btn { border: none; background: var(--c-primary); color: white; border-radius: var(--radius-xs); padding: 0.3rem 0.5rem; font-size: 0.7rem; cursor: pointer; white-space: nowrap; }
+.task-detail__subtasks { display: flex; flex-direction: column; gap: 0.3rem; }
+.task-detail__subtask { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; cursor: pointer; padding: 0.2rem 0; }
+.task-detail__subtask-check { width: 16px; height: 16px; border: 2px solid var(--c-border); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; flex-shrink: 0; transition: all 0.2s; }
+.task-detail__subtask-check.done { background: var(--c-success); border-color: var(--c-success); color: white; }
+.task-detail__subtask-text { flex: 1; }
+.task-detail__subtask-text.done { text-decoration: line-through; color: var(--c-text-muted); }
+.task-detail__deadline { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.65rem; border-radius: var(--radius-sm); }
+.task-detail__deadline--relaxed { background: rgba(16,185,129,0.08); }
+.task-detail__deadline--approaching { background: rgba(245,158,11,0.08); }
+.task-detail__deadline--soon { background: rgba(249,115,22,0.08); }
+.task-detail__deadline--today { background: rgba(239,68,68,0.08); }
+.task-detail__deadline--overdue { background: rgba(239,68,68,0.06); }
+.task-detail__deadline-text { font-size: 0.8rem; line-height: 1.3; }
+.task-detail__deadline-msg { font-weight: 600; }
+.task-detail__deadline-sub { font-size: 0.7rem; color: var(--c-text-muted); }
+.task-detail__deadline svg { flex-shrink: 0; }
+.task-detail__actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.task-detail__action { display: flex; align-items: center; gap: 0.25rem; border: 1px solid var(--c-border); background: var(--c-surface); color: var(--c-text); border-radius: var(--radius-xs); padding: 0.3rem 0.6rem; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; }
+.task-detail__action:hover { border-color: var(--c-primary); color: var(--c-primary); }
+
+/* ============= DEADLINE RUSH MODE ============= */
+[data-mode="deadline"] { --c-bg: #1A0A0A; --c-surface: #2A1010; --c-surface-hover: #3A1818; --c-border: #4A2020; --c-text: #FFE0E0; --c-text-muted: #CC8888; --c-primary: #FF4444; --c-primary-light: #FF6666; --c-primary-dark: #CC3333; --c-primary-bg: rgba(255,68,68,0.15); --c-shadow: rgba(255,0,0,0.1); --c-success: #FF6B6B; --c-warning: #FF8C42; }
+[data-mode="deadline"] .topbar { background: #1A0A0A; border-bottom-color: #4A2020; }
+[data-mode="deadline"] .bottom-nav { background: #1A0A0A; border-top-color: #4A2020; }
+[data-mode="deadline"] .task-card__meta { display: none; }
+[data-mode="deadline"] .task-progress { display: none; }
+[data-mode="deadline"] .task-card--irrelevant { display: none !important; }
+[data-mode="deadline"] .intention-banner, [data-mode="deadline"] .focus-nudge, [data-mode="deadline"] .bad-day-banner, [data-mode="deadline"] .milestone-banner, [data-mode="deadline"] #focusModeBar { display: none !important; }
+[data-mode="deadline"] .sidebar { display: none; }
+.deadline-countdown { display: none; }
+[data-mode="deadline"] .deadline-countdown { display: flex; flex-direction: column; align-items: center; padding: 1.25rem; background: linear-gradient(135deg, rgba(255,68,68,0.12), rgba(255,140,66,0.08)); border: 1px solid rgba(255,68,68,0.25); border-radius: var(--radius); margin-bottom: 1rem; }
+.deadline-countdown__time { font-family: var(--font-display); font-size: 2.5rem; font-weight: 700; color: var(--c-primary); font-variant-numeric: tabular-nums; letter-spacing: 0.05em; }
+.deadline-countdown__label { font-size: 0.85rem; color: var(--c-text-muted); margin-top: 0.25rem; }
+.deadline-countdown__target { font-weight: 600; color: var(--c-text); }
+.deadline-countdown__exit { margin-top: 0.75rem; border: 1px solid var(--c-border); background: transparent; color: var(--c-text-muted); border-radius: var(--radius-xs); padding: 0.35rem 1rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
+.deadline-countdown__exit:hover { border-color: var(--c-text); color: var(--c-text); }
+.deadline-suggest { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1rem; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius); margin-bottom: 0.75rem; font-size: 0.8rem; }
+.deadline-suggest__actions { display: flex; gap: 0.35rem; margin-left: auto; flex-shrink: 0; }
+.deadline-suggest__btn { border: none; border-radius: var(--radius-xs); padding: 0.3rem 0.65rem; font-size: 0.7rem; cursor: pointer; }
+.deadline-suggest__btn--enter { background: var(--c-danger); color: white; }
+.deadline-suggest__btn--dismiss { background: var(--c-surface); color: var(--c-text-muted); border: 1px solid var(--c-border); }
 
 /* ============= MODALS ============= */
 .modal-overlay {
@@ -851,6 +980,7 @@ a { color: var(--c-primary); text-decoration: none; }
                     <button class="topbar__tab active" data-view="ranked">Ranked</button>
                     <button class="topbar__tab" data-view="eisenhower">Matrix</button>
                     <button class="topbar__tab" data-view="planner">Planner</button>
+                    <button class="topbar__tab" data-view="calendar">Calendar</button>
                     <button class="topbar__tab" data-view="overview">Overview</button>
                 </nav>
                 <div class="topbar__spacer"></div>
@@ -859,6 +989,7 @@ a { color: var(--c-primary); text-decoration: none; }
                     <button class="btn btn--primary btn--sm" id="addTaskBtn">+ Task</button>
                     <button class="btn--icon" id="brainDumpBtn" title="Brain Dump" style="font-size:1.2rem">&#128173;</button>
                     <button class="btn--icon" id="focusGameBtn" title="Struggling to focus?" style="font-size:1.2rem">&#129504;</button>
+                    <button class="btn--icon" id="milestoneBtn" title="Milestones" style="font-size:1.1rem">&#128204;</button>
                     <button class="btn--icon" id="reviewBtn" title="Daily Review">&#128203;</button>
                     <button class="btn--icon" id="settingsBtn" title="Settings">&#9881;</button>
                     <button class="btn--icon" id="themeBtn" title="Toggle theme">&#9790;</button>
@@ -869,8 +1000,17 @@ a { color: var(--c-primary); text-decoration: none; }
                 <!-- Active task banner (shows during Pomodoro) -->
                 <div id="activeTaskBanner"></div>
 
+                <!-- Deadline countdown (visible in Red Mode) -->
+                <div class="deadline-countdown" id="deadlineCountdown"></div>
+
+                <!-- Deadline suggestion banner -->
+                <div id="deadlineSuggest"></div>
+
                 <!-- Bad day mode banner -->
                 <div id="badDayBanner"></div>
+
+                <!-- Milestone banner -->
+                <div class="milestone-banner" id="milestoneBanner"></div>
 
                 <div class="intention-banner" id="intentionBanner">
                     <span class="intention-banner__icon">&#127919;</span>
@@ -895,15 +1035,17 @@ a { color: var(--c-primary); text-decoration: none; }
                     <button class="filter-btn active" data-filter="all">All</button>
                     <button class="filter-btn" data-filter="high">High Priority</button>
                     <button class="filter-btn" data-filter="today">Today</button>
+                    <button class="filter-btn" data-filter="tomorrow">Tomorrow</button>
                     <button class="filter-btn" data-filter="done">Done</button>
                     <button class="filter-btn" data-filter="focus">&#127919; Focus</button>
+                    <button class="filter-btn" data-filter="deadline" style="color:var(--c-danger)">&#128293; Deadline</button>
                 </div>
 
                 <!-- Brain dump mode -->
                 <div id="brainDumpArea"></div>
 
                 <div class="quick-add" id="quickAdd">
-                    <span class="quick-add__icon">&#9998;</span>
+                    <span class="quick-add__icon">&#10010;</span>
                     <input class="quick-add__input" id="quickAddInput" type="text" placeholder="Quick add a todo..." autocomplete="off">
                     <div class="quick-add__extras">
                         <input class="quick-add__time" id="quickAddTime" type="time" title="Schedule time (optional)">
@@ -917,6 +1059,7 @@ a { color: var(--c-primary); text-decoration: none; }
                 </div>
                 <div class="view" id="eisenhowerView"></div>
                 <div class="view" id="plannerView"></div>
+                <div class="view" id="calendarView"></div>
                 <div class="view" id="overviewView"></div>
             </div>
         </main>
@@ -927,8 +1070,8 @@ a { color: var(--c-primary); text-decoration: none; }
         <button class="bottom-nav__item active" data-view="ranked"><span class="bottom-nav__icon">&#9776;</span>Ranked</button>
         <button class="bottom-nav__item" data-view="eisenhower"><span class="bottom-nav__icon">&#9638;</span>Matrix</button>
         <button class="bottom-nav__item" data-view="planner"><span class="bottom-nav__icon">&#128197;</span>Planner</button>
-        <button class="bottom-nav__item" data-view="overview"><span class="bottom-nav__icon">&#128200;</span>Overview</button>
-        <button class="bottom-nav__item" data-view="more" id="mobileMoreBtn"><span class="bottom-nav__icon">&#8943;</span>More</button>
+        <button class="bottom-nav__item" data-view="calendar"><span class="bottom-nav__icon">&#128198;</span>Calendar</button>
+        <button class="bottom-nav__item" data-view="overview"><span class="bottom-nav__icon">&#128202;</span>Overview</button>
     </nav>
     <button class="fab" id="mobileFab">+</button>
     <!-- Launch bubble removed — rocket icon now on each task card -->
@@ -1030,6 +1173,7 @@ class TaskManager {
             duration: Number(data.duration) || (isTodo ? 10 : 30),
             scheduledTime: data.scheduledTime || null,
             dueDate: data.dueDate || null,
+            milestoneId: data.milestoneId || null,
             done: false,
             completedAt: null,
             createdAt: new Date().toISOString(),
@@ -1075,6 +1219,10 @@ class TaskManager {
                 }
             }
             this.createNextOccurrence(task);
+            // Move completed recurring tasks out of Today so they don't clutter
+            if (task.recurrence && task.day === 'Today') {
+                task.day = 'Done';
+            }
             this.bus.emit('task:completed', task);
         } else {
             task.completedAt = null;
@@ -1182,6 +1330,7 @@ class TaskManager {
         let list = [...this.tasks];
         if (filter === 'high') list = list.filter(t => this.score(t) >= 10 && !t.done);
         else if (filter === 'today') list = list.filter(t => t.day === 'Today' && !t.done);
+        else if (filter === 'tomorrow') list = list.filter(t => t.day === 'Tomorrow' && !t.done);
         else if (filter === 'done') list = list.filter(t => t.done);
         else if (filter === 'focus') { list = list.filter(t => !t.done); list = this.sorted(list).slice(0, 3); return list; }
         else list = list.filter(t => !t.done);
@@ -1219,6 +1368,158 @@ class TaskManager {
 
     setTasks(tasks) {
         this.tasks = tasks;
+    }
+}
+
+// ============= MILESTONE MANAGER =============
+class MilestoneManager {
+    constructor(store) {
+        this.store = store;
+        this.milestones = this.store.get('pf.milestones', []);
+    }
+
+    save() { this.store.set('pf.milestones', this.milestones); }
+    getAll() { return this.milestones.sort((a, b) => a.date.localeCompare(b.date)); }
+    getById(id) { return this.milestones.find(m => m.id === id); }
+
+    getUpcoming(days = 14) {
+        const now = new Date(); now.setHours(0,0,0,0);
+        const limit = new Date(now); limit.setDate(limit.getDate() + days);
+        return this.getAll().filter(m => {
+            const d = new Date(m.date + 'T00:00:00');
+            return d >= now && d <= limit;
+        });
+    }
+
+    create(data) {
+        const m = { id: IdGenerator.next(), title: data.title, date: data.date, createdAt: new Date().toISOString() };
+        this.milestones.push(m);
+        this.save();
+        return m;
+    }
+
+    update(id, data) {
+        const m = this.getById(id);
+        if (m) { Object.assign(m, data); this.save(); }
+    }
+
+    delete(id) {
+        this.milestones = this.milestones.filter(m => m.id !== id);
+        this.save();
+    }
+
+    formatCountdown(dateStr) {
+        const now = new Date(); now.setHours(0,0,0,0);
+        const target = new Date(dateStr + 'T00:00:00');
+        const diffMs = target - now;
+        const days = Math.round(diffMs / 86400000);
+        if (days < -1) return `${Math.abs(days)} days ago`;
+        if (days === -1) return 'yesterday';
+        if (days === 0) return 'today!';
+        if (days === 1) return 'tomorrow';
+        if (days <= 7) return `in ${days} days`;
+        if (days <= 14) return `in ${Math.ceil(days / 7)} weeks`;
+        return `in ${days} days`;
+    }
+}
+
+// ============= DEADLINE MODE MANAGER =============
+class DeadlineModeManager {
+    constructor(bus, store, taskManager, milestoneManager) {
+        this.bus = bus;
+        this.store = store;
+        this.tm = taskManager;
+        this.mm = milestoneManager;
+        this._active = false;
+        this._targetDate = null;
+        this._targetTitle = null;
+        this._milestoneId = null;
+        this._intervalId = null;
+        this._prevTheme = null;
+    }
+
+    get isActive() { return this._active; }
+
+    activate(targetDate, targetTitle, milestoneId) {
+        this._active = true;
+        this._targetDate = targetDate;
+        this._targetTitle = targetTitle;
+        this._milestoneId = milestoneId || null;
+        this._prevTheme = document.documentElement.getAttribute('data-theme');
+        document.documentElement.setAttribute('data-mode', 'deadline');
+        this._startCountdown();
+        this.bus.emit('deadline:activated', { date: targetDate, title: targetTitle, milestoneId });
+    }
+
+    deactivate() {
+        this._active = false;
+        clearInterval(this._intervalId);
+        document.documentElement.removeAttribute('data-mode');
+        this.bus.emit('deadline:deactivated');
+    }
+
+    _startCountdown() {
+        clearInterval(this._intervalId);
+        this._intervalId = setInterval(() => {
+            const cd = this.getCountdown();
+            this.bus.emit('deadline:tick', cd);
+            if (cd.totalSeconds <= 0) {
+                clearInterval(this._intervalId);
+                this.deactivate();
+            }
+        }, 1000);
+    }
+
+    getCountdown() {
+        const now = Date.now();
+        const target = new Date(this._targetDate + 'T23:59:59').getTime();
+        const diff = Math.max(0, target - now);
+        const totalSeconds = Math.floor(diff / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        let text;
+        if (hours >= 48) text = `${Math.floor(hours / 24)} days`;
+        else if (hours >= 1) text = `${hours}h ${minutes}m`;
+        else text = `${minutes}m ${seconds}s`;
+        return { hours, minutes, seconds, totalSeconds, text };
+    }
+
+    getRelevantTaskIds() {
+        const ids = new Set();
+        this.tm.tasks.forEach(t => {
+            if (t.done) return;
+            if (this._milestoneId && t.milestoneId === this._milestoneId) ids.add(t.id);
+            if (t.dueDate && t.dueDate <= this._targetDate) ids.add(t.id);
+        });
+        return ids;
+    }
+
+    checkAutoSuggest() {
+        const dismissed = this.store.get('pf.deadlineDismissed', {});
+        const today = getDateStr();
+        // Check milestones within 48h
+        const upcoming = this.mm.getUpcoming(2);
+        for (const m of upcoming) {
+            if (dismissed[m.id] === today) continue;
+            return { date: m.date, title: m.title, milestoneId: m.id };
+        }
+        // Check tasks with due dates within 48h
+        const limit = new Date(); limit.setDate(limit.getDate() + 2);
+        const limitStr = `${limit.getFullYear()}-${String(limit.getMonth()+1).padStart(2,'0')}-${String(limit.getDate()).padStart(2,'0')}`;
+        for (const t of this.tm.tasks) {
+            if (t.done || !t.dueDate) continue;
+            if (t.dueDate <= limitStr && t.dueDate >= today && !dismissed[`task_${t.id}`]) {
+                return { date: t.dueDate, title: t.title, milestoneId: null };
+            }
+        }
+        return null;
+    }
+
+    dismissSuggestion(id) {
+        const dismissed = this.store.get('pf.deadlineDismissed', {});
+        dismissed[id || 'last'] = getDateStr();
+        this.store.set('pf.deadlineDismissed', dismissed);
     }
 }
 
@@ -1477,6 +1778,7 @@ class PomodoroManager {
 
     _transitionPhase() {
         if (!this.state) return;
+        clearInterval(this._intervalId);
         this._playBeep();
         if (this.state.phase === 'focus') {
             this.state.sessions++;
@@ -1488,19 +1790,41 @@ class PomodoroManager {
                 this.tm.save();
             }
             this.bus.emit('pomodoro:sessionComplete', this.state);
-            // Break
-            const isLong = this.state.sessions % 4 === 0;
-            this.state.phase = 'break';
-            this.state.remaining = isLong ? 10 * 60 : 5 * 60;
-            this._persist();
-            this.bus.emit('pomodoro:tick', this.state);
-        } else {
-            // Back to focus
-            this.state.phase = 'focus';
-            this.state.remaining = this.state.durationSec;
-            this._persist();
-            this.bus.emit('pomodoro:tick', this.state);
         }
+        // Pause and prompt user instead of auto-cycling
+        this.state.remaining = 0;
+        this.state.isPaused = true;
+        this._persist();
+        this.bus.emit('pomodoro:phaseEnd', { phase: this.state.phase, state: this.state });
+    }
+
+    startBreak(longBreak) {
+        if (!this.state) return;
+        this.state.phase = 'break';
+        this.state.remaining = longBreak ? 10 * 60 : 5 * 60;
+        this.state.isPaused = false;
+        this._persist();
+        this._tick();
+        this.bus.emit('pomodoro:tick', this.state);
+    }
+
+    startNextFocus() {
+        if (!this.state) return;
+        this.state.phase = 'focus';
+        this.state.remaining = this.state.durationSec;
+        this.state.isPaused = false;
+        this._persist();
+        this._tick();
+        this.bus.emit('pomodoro:tick', this.state);
+    }
+
+    extend(extraMin) {
+        if (!this.state) return;
+        this.state.remaining = extraMin * 60;
+        this.state.isPaused = false;
+        this._persist();
+        this._tick();
+        this.bus.emit('pomodoro:tick', this.state);
     }
 
     pause() {
@@ -1790,6 +2114,24 @@ class RankedViewRenderer {
         this.pomo = pomodoroManager;
         this.container = document.getElementById('rankedList');
         this._draggedId = null;
+        this._expandedId = null;
+    }
+
+    _calcProgress(t, subtaskDone, subtaskTotal) {
+        if (t.done) return { show: false };
+        // Subtask-based progress
+        if (subtaskTotal > 0) {
+            const pct = Math.round(subtaskDone / subtaskTotal * 100);
+            const level = pct < 33 ? 'low' : pct < 66 ? 'mid' : 'high';
+            return { show: true, pct, level, label: `${subtaskDone}/${subtaskTotal} subtasks` };
+        }
+        // Pomodoro/focus-time-based progress (if task has duration estimate)
+        if (t.duration && t.focusMinutes > 0) {
+            const pct = Math.min(100, Math.round(t.focusMinutes / t.duration * 100));
+            const level = pct < 33 ? 'low' : pct < 66 ? 'mid' : 'high';
+            return { show: true, pct, level, label: `${t.focusMinutes}/${t.duration}m focused` };
+        }
+        return { show: false };
     }
 
     render(filter, query) {
@@ -1806,7 +2148,10 @@ class RankedViewRenderer {
         const score = this.tm.score(t);
         const subtaskDone = t.subtasks ? t.subtasks.filter(s => s.done).length : 0;
         const subtaskTotal = t.subtasks ? t.subtasks.length : 0;
-        const subtaskPct = subtaskTotal ? Math.round(subtaskDone / subtaskTotal * 100) : 0;
+
+        // Combined progress: subtasks + pomodoro focus time vs estimated duration
+        const progressInfo = this._calcProgress(t, subtaskDone, subtaskTotal);
+
         return `<div class="task-card-wrapper" data-id="${t.id}">
             <div class="task-card-wrapper__delete">&#128465; Delete</div>
             ${!t.done ? `<div class="task-card-wrapper__drag" data-drag-handle data-id="${t.id}" draggable="true" title="Hold to reorder"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg></div>` : ''}
@@ -1827,8 +2172,12 @@ class RankedViewRenderer {
                         ${t.recurrence ? `<span class="badge badge--recurrence">&#8635; ${t.recurrence.type}</span>` : ''}
                         ${t.streak && t.streak.current > 0 ? `<span class="badge badge--streak">&#128293; ${t.streak.current}d</span>` : ''}
                         ${t.pomodoros ? `<span class="badge badge--duration">&#127813; ${t.pomodoros}</span>` : ''}
+                        ${t.milestoneId && this._getMilestoneName ? `<span class="badge badge--milestone">&#128204; ${esc(this._getMilestoneName(t.milestoneId))}</span>` : ''}
                     </div>
-                    ${subtaskTotal ? `<div class="subtask-bar"><div class="subtask-bar__fill" style="width:${subtaskPct}%"></div></div>` : ''}
+                    ${progressInfo.show ? `<div class="task-progress">
+                        <div class="task-progress__bar"><div class="task-progress__fill task-progress__fill--${progressInfo.level}" style="width:${progressInfo.pct}%"></div></div>
+                        <div class="task-progress__label"><span>${progressInfo.label}</span><span>${progressInfo.pct}%</span></div>
+                    </div>` : ''}
                 </div>
                 <div class="task-card__actions">
                     ${!t.done ? `<button class="btn btn--ghost btn--sm" data-action="micro" data-id="${t.id}" title="Just 5 minutes">5m</button>` : ''}
@@ -1836,6 +2185,9 @@ class RankedViewRenderer {
                     <button class="btn btn--ghost btn--sm" data-action="focus" data-id="${t.id}" title="Focus">&#127813;</button>
                     <button class="btn btn--ghost btn--sm" data-action="skip" data-id="${t.id}" title="Skip">&#9193;</button>
                     <button class="btn btn--ghost btn--sm task-card__delete-desktop" data-action="delete" data-id="${t.id}" title="Delete">&#128465;</button>
+                </div>
+                <div class="task-card__detail${this._expandedId === t.id ? ' open' : ''}" data-detail="${t.id}">
+                    ${this._expandedId === t.id ? this._detailHTML(t) : ''}
                 </div>
             </div>
         </div>`;
@@ -1982,6 +2334,176 @@ class RankedViewRenderer {
                 this.tm.save();
             }
         });
+
+        // Card body click → expand detail
+        this.container.querySelectorAll('.task-card__body').forEach(body => {
+            body.style.cursor = 'pointer';
+            body.addEventListener('click', (e) => {
+                if (e.target.closest('[data-action]')) return;
+                const card = body.closest('.task-card');
+                const id = Number(card.dataset.id);
+                const detail = card.querySelector(`[data-detail="${id}"]`);
+                if (!detail) return;
+                if (this._expandedId === id) {
+                    this._expandedId = null;
+                    detail.classList.remove('open');
+                    detail.innerHTML = '';
+                } else {
+                    // Collapse previous
+                    const prev = this.container.querySelector('.task-card__detail.open');
+                    if (prev) { prev.classList.remove('open'); prev.innerHTML = ''; }
+                    this._expandedId = id;
+                    const task = this.tm.getById(id);
+                    if (task) {
+                        detail.innerHTML = this._detailHTML(task);
+                        detail.classList.add('open');
+                        this._attachDetailEvents(detail, task);
+                    }
+                }
+            });
+        });
+    }
+
+    _detailHTML(t) {
+        let html = '';
+        // Sticky notes
+        const notes = (t.notes || '').split('\n').filter(n => n.trim());
+        html += `<div class="task-detail__section">
+            <div class="task-detail__label">Notes</div>
+            <div class="task-detail__notes-list">
+                ${notes.length ? notes.map(n => `<div class="task-detail__note">${esc(n)}</div>`).join('') : '<div style="font-size:0.75rem;color:var(--c-text-muted)">No notes yet</div>'}
+            </div>
+            <div class="task-detail__note-add">
+                <input class="task-detail__note-input" placeholder="Add a note..." maxlength="500">
+                <button class="task-detail__note-btn" data-detail-action="addNote">+ Add</button>
+            </div>
+        </div>`;
+
+        // Subtasks
+        if (t.subtasks && t.subtasks.length > 0) {
+            html += `<div class="task-detail__section">
+                <div class="task-detail__label">Subtasks (${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length})</div>
+                <div class="task-detail__subtasks">
+                    ${t.subtasks.map(s => `<div class="task-detail__subtask" data-sub-id="${s.id}">
+                        <div class="task-detail__subtask-check${s.done ? ' done' : ''}">${s.done ? '&#10003;' : ''}</div>
+                        <div class="task-detail__subtask-text${s.done ? ' done' : ''}">${esc(s.text)}</div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        // Deadline indicator
+        if (t.dueDate) {
+            const now = new Date(); now.setHours(0,0,0,0);
+            const due = new Date(t.dueDate + 'T00:00:00');
+            const days = Math.round((due - now) / 86400000);
+            let level, msg, sub;
+            if (days > 7) { level = 'relaxed'; msg = 'Plenty of time'; sub = `Due ${t.dueDate}`; }
+            else if (days > 3) { level = 'approaching'; msg = `${days} days left`; sub = "You're on track"; }
+            else if (days > 1) { level = 'soon'; msg = `${days} days to go`; sub = 'Almost there!'; }
+            else if (days === 1) { level = 'soon'; msg = 'Due tomorrow'; sub = "You've got this!"; }
+            else if (days === 0) { level = 'today'; msg = 'Due today'; sub = "You've got this!"; }
+            else { level = 'overdue'; msg = `${Math.abs(days)} day${Math.abs(days)>1?'s':''} overdue`; sub = "It's okay, let's finish it up"; }
+
+            // Mini arc SVG
+            const pct = days > 0 ? Math.max(0, Math.min(100, 100 - (days / 14 * 100))) : 100;
+            const r = 18, circ = 2 * Math.PI * r, offset = circ - (pct / 100) * circ;
+            const arcColors = { relaxed: '#10B981', approaching: '#F59E0B', soon: '#F97316', today: '#EF4444', overdue: '#DC2626' };
+            html += `<div class="task-detail__section">
+                <div class="task-detail__deadline task-detail__deadline--${level}">
+                    <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(-90deg)">
+                        <circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--c-border)" stroke-width="4"/>
+                        <circle cx="22" cy="22" r="${r}" fill="none" stroke="${arcColors[level]}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+                    </svg>
+                    <div class="task-detail__deadline-text">
+                        <div class="task-detail__deadline-msg">${msg}</div>
+                        <div class="task-detail__deadline-sub">${sub}</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // Milestone info
+        if (t.milestoneId && this._getMilestoneName) {
+            const name = this._getMilestoneName(t.milestoneId);
+            const ms = this._milestoneManager?.getById(t.milestoneId);
+            if (name) {
+                const cd = ms ? this._milestoneManager.formatCountdown(ms.date) : '';
+                html += `<div class="task-detail__section">
+                    <div class="task-detail__deadline task-detail__deadline--approaching" style="background:rgba(139,92,246,0.08)">
+                        <span style="font-size:1.2rem">&#128204;</span>
+                        <div class="task-detail__deadline-text">
+                            <div class="task-detail__deadline-msg">${esc(name)}</div>
+                            <div class="task-detail__deadline-sub">${cd}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        }
+
+        // Actions
+        html += `<div class="task-detail__section">
+            <div class="task-detail__actions">
+                <button class="task-detail__action" data-detail-action="edit" data-id="${t.id}">&#9998; Edit</button>
+                ${!t.done ? `<button class="task-detail__action" data-detail-action="focus" data-id="${t.id}">&#127813; Pomodoro</button>` : ''}
+                ${!t.done ? `<button class="task-detail__action" data-detail-action="micro" data-id="${t.id}">&#9201; 5 min</button>` : ''}
+            </div>
+        </div>`;
+        return html;
+    }
+
+    _attachDetailEvents(detail, task) {
+        // Add note
+        const noteBtn = detail.querySelector('[data-detail-action="addNote"]');
+        const noteInput = detail.querySelector('.task-detail__note-input');
+        if (noteBtn && noteInput) {
+            const addNote = () => {
+                const text = noteInput.value.trim();
+                if (!text) return;
+                task.notes = task.notes ? task.notes + '\n' + text : text;
+                this.tm.update(task.id, { notes: task.notes });
+                noteInput.value = '';
+                // Re-render notes list
+                const list = detail.querySelector('.task-detail__notes-list');
+                const notes = task.notes.split('\n').filter(n => n.trim());
+                list.innerHTML = notes.map(n => `<div class="task-detail__note">${esc(n)}</div>`).join('');
+            };
+            noteBtn.addEventListener('click', addNote);
+            noteInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addNote(); } });
+        }
+        // Subtask toggles
+        detail.querySelectorAll('.task-detail__subtask').forEach(sub => {
+            sub.addEventListener('click', () => {
+                const subId = Number(sub.dataset.subId);
+                this.tm.toggleSubtask(task.id, subId);
+                const s = task.subtasks.find(x => x.id === subId);
+                if (s) {
+                    sub.querySelector('.task-detail__subtask-check').classList.toggle('done', s.done);
+                    sub.querySelector('.task-detail__subtask-check').innerHTML = s.done ? '&#10003;' : '';
+                    sub.querySelector('.task-detail__subtask-text').classList.toggle('done', s.done);
+                    // Update section label
+                    const label = detail.querySelector('.task-detail__label');
+                    if (label && label.textContent.startsWith('Subtasks')) {
+                        label.textContent = `Subtasks (${task.subtasks.filter(x=>x.done).length}/${task.subtasks.length})`;
+                    }
+                }
+            });
+        });
+        // Action buttons
+        detail.querySelectorAll('[data-detail-action]').forEach(btn => {
+            const action = btn.dataset.detailAction;
+            if (action === 'edit') btn.addEventListener('click', () => this.bus.emit('ui:editTask', task.id));
+            else if (action === 'focus') btn.addEventListener('click', () => this.bus.emit('ui:startPomodoro', task.id));
+            else if (action === 'micro') btn.addEventListener('click', () => this.bus.emit('ui:microTimer', task.id));
+        });
+    }
+
+    setMilestoneManager(mm) {
+        this._milestoneManager = mm;
+        this._getMilestoneName = (id) => {
+            const m = mm.getById(id);
+            return m ? m.title : '';
+        };
     }
 }
 
@@ -2225,54 +2747,448 @@ class PlannerViewRenderer {
 }
 
 // --- Overview View ---
+// --- Calendar View ---
+class CalendarViewRenderer {
+    constructor(bus, taskManager, store) {
+        this.bus = bus;
+        this.tm = taskManager;
+        this.store = store;
+        this.container = document.getElementById('calendarView');
+        this.viewDate = new Date();
+        this.mm = null;
+    }
+
+    setMilestoneManager(mm) { this.mm = mm; }
+
+    render() {
+        const year = this.viewDate.getFullYear();
+        const month = this.viewDate.getMonth();
+        const today = new Date();
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+        // Calendar events: tasks with dueDate or scheduledTime, plus custom meetings
+        const events = this._getEventsForMonth(year, month);
+
+        // Build grid
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const daysInPrev = new Date(year, month, 0).getDate();
+
+        let cells = '';
+        // Day headers
+        dayNames.forEach(d => { cells += `<div class="calendar__day-header">${d}</div>`; });
+
+        // Previous month padding
+        for (let i = firstDay - 1; i >= 0; i--) {
+            const day = daysInPrev - i;
+            cells += `<div class="calendar__cell calendar__cell--other"><div class="calendar__date">${day}</div></div>`;
+        }
+
+        // Current month days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+            const dayEvents = events.filter(e => e.date === dateStr);
+            const maxShow = 3;
+            const shown = dayEvents.slice(0, maxShow);
+            const extra = dayEvents.length - maxShow;
+
+            cells += `<div class="calendar__cell${isToday ? ' calendar__cell--today' : ''}" data-date="${dateStr}">
+                <div class="calendar__date">${d}</div>
+                ${shown.map(e => `<div class="calendar__event calendar__event--${e.type}" title="${esc(e.title)}"${e.taskId ? ` data-task-id="${e.taskId}"` : ''}>${esc(e.title)}</div>`).join('')}
+                ${extra > 0 ? `<div class="calendar__more">+${extra} more</div>` : ''}
+            </div>`;
+        }
+
+        // Next month padding
+        const totalCells = firstDay + daysInMonth;
+        const remaining = (7 - (totalCells % 7)) % 7;
+        for (let d = 1; d <= remaining; d++) {
+            cells += `<div class="calendar__cell calendar__cell--other"><div class="calendar__date">${d}</div></div>`;
+        }
+
+        this.container.innerHTML = `<div class="calendar">
+            <div class="calendar__header">
+                <div class="calendar__nav">
+                    <button id="calPrev">&larr;</button>
+                    <button id="calToday">Today</button>
+                    <button id="calNext">&rarr;</button>
+                </div>
+                <div class="calendar__title">${monthNames[month]} ${year}</div>
+                <div class="calendar__nav">
+                    <button id="calImport">&#128229; Import .ics</button>
+                </div>
+            </div>
+            <div class="calendar__grid">${cells}</div>
+            <input type="file" id="calFileInput" accept=".ics,.ical" style="display:none">
+        </div>`;
+
+        this._attachEvents();
+    }
+
+    _getEventsForMonth(year, month) {
+        const events = [];
+        const pad = (n) => String(n).padStart(2, '0');
+        const monthStr = `${year}-${pad(month + 1)}`;
+
+        // Tasks with due dates
+        this.tm.tasks.forEach(t => {
+            if (t.dueDate && t.dueDate.startsWith(monthStr)) {
+                const type = t.done ? 'done' : (t.dueDate < getDateStr() ? 'overdue' : 'task');
+                events.push({ date: t.dueDate, title: t.title, type, taskId: t.id });
+            }
+            // Tasks with scheduledTime and day = Today — show on today's date
+            if (t.scheduledTime && t.day === 'Today' && !t.done) {
+                const todayStr = getDateStr();
+                if (todayStr.startsWith(monthStr)) {
+                    events.push({ date: todayStr, title: `${t.scheduledTime} ${t.title}`, type: 'task', taskId: t.id });
+                }
+            }
+        });
+
+        // Custom meetings from storage
+        const meetings = this.store.get('pf.calendarEvents', []);
+        meetings.forEach(m => {
+            if (m.date && m.date.startsWith(monthStr)) {
+                events.push({ date: m.date, title: m.title, type: 'meeting' });
+            }
+        });
+
+        // Milestones
+        if (this.mm) {
+            this.mm.getAll().forEach(m => {
+                if (m.date && m.date.startsWith(monthStr)) {
+                    events.push({ date: m.date, title: '📌 ' + m.title, type: 'milestone' });
+                }
+            });
+        }
+
+        return events.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    _attachEvents() {
+        this.container.querySelector('#calPrev').addEventListener('click', () => {
+            this.viewDate.setMonth(this.viewDate.getMonth() - 1);
+            this.render();
+        });
+        this.container.querySelector('#calNext').addEventListener('click', () => {
+            this.viewDate.setMonth(this.viewDate.getMonth() + 1);
+            this.render();
+        });
+        this.container.querySelector('#calToday').addEventListener('click', () => {
+            this.viewDate = new Date();
+            this.render();
+        });
+
+        // Click on date cell to add meeting/task
+        this.container.querySelectorAll('.calendar__cell[data-date]').forEach(cell => {
+            cell.addEventListener('click', (e) => {
+                if (e.target.closest('.calendar__event')) return; // don't trigger on event click
+                this._showAddEventModal(cell.dataset.date);
+            });
+        });
+
+        // Click on task event to edit
+        this.container.querySelectorAll('.calendar__event[data-task-id]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.bus.emit('ui:editTask', Number(el.dataset.taskId));
+            });
+        });
+
+        // Import .ics
+        const fileInput = this.container.querySelector('#calFileInput');
+        this.container.querySelector('#calImport').addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => this._importICS(e.target.files[0]));
+    }
+
+    _showAddEventModal(date) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `<div class="modal" style="max-width:360px">
+            <div class="modal__header">
+                <div class="modal__title">Add to ${date}</div>
+                <button class="btn--icon modal-close">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input class="form-input" id="calEventTitle" placeholder="Meeting, deadline, event..." maxlength="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="calEventType">
+                        <option value="meeting">Meeting</option>
+                        <option value="task">Task (creates a new task with due date)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Time (optional)</label>
+                    <input class="form-input" id="calEventTime" type="time">
+                </div>
+            </div>
+            <div class="modal__footer" style="display:flex;gap:0.5rem;justify-content:flex-end;padding:1rem 1.5rem;border-top:1px solid var(--c-border)">
+                <button class="btn btn--ghost" id="calCancel">Cancel</button>
+                <button class="btn btn--primary" id="calSave">Add</button>
+            </div>
+        </div>`;
+        document.getElementById('modalRoot').appendChild(overlay);
+        overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+        overlay.querySelector('#calCancel').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+        overlay.querySelector('#calSave').addEventListener('click', () => {
+            const title = overlay.querySelector('#calEventTitle').value.trim();
+            if (!title) return;
+            const type = overlay.querySelector('#calEventType').value;
+            const time = overlay.querySelector('#calEventTime').value;
+
+            if (type === 'task') {
+                this.tm.add({
+                    title, day: 'Backlog', dueDate: date,
+                    scheduledTime: time || null,
+                    urgency: 3, impact: 3, energy: 3, interest: 3,
+                });
+            } else {
+                const meetings = this.store.get('pf.calendarEvents', []);
+                meetings.push({ date, title: time ? `${time} ${title}` : title, type: 'meeting' });
+                this.store.set('pf.calendarEvents', meetings);
+            }
+            overlay.remove();
+            this.render();
+        });
+
+        setTimeout(() => overlay.querySelector('#calEventTitle').focus(), 100);
+    }
+
+    _importICS(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const events = this._parseICS(text);
+            if (events.length === 0) return;
+            const meetings = this.store.get('pf.calendarEvents', []);
+            events.forEach(ev => meetings.push(ev));
+            this.store.set('pf.calendarEvents', meetings);
+            this.render();
+            // Toast
+            this.bus.emit('toast', { message: `Imported ${events.length} event${events.length > 1 ? 's' : ''}`, type: 'success' });
+        };
+        reader.readAsText(file);
+    }
+
+    _parseICS(text) {
+        const events = [];
+        const blocks = text.split('BEGIN:VEVENT');
+        blocks.forEach(block => {
+            const summaryMatch = block.match(/SUMMARY[^:]*:(.*)/);
+            const dtStartMatch = block.match(/DTSTART[^:]*:(\d{4})(\d{2})(\d{2})/);
+            if (summaryMatch && dtStartMatch) {
+                const date = `${dtStartMatch[1]}-${dtStartMatch[2]}-${dtStartMatch[3]}`;
+                const title = summaryMatch[1].trim();
+                events.push({ date, title, type: 'meeting' });
+            }
+        });
+        return events;
+    }
+}
+
 class OverviewViewRenderer {
-    constructor(bus, taskManager, reviewManager) {
+    constructor(bus, taskManager, reviewManager, milestoneManager) {
         this.bus = bus;
         this.tm = taskManager;
         this.rm = reviewManager;
+        this.mm = milestoneManager;
         this.container = document.getElementById('overviewView');
     }
 
     render() {
         const stats = this.tm.todayStats();
         const pct = stats.total ? Math.round(stats.done / stats.total * 100) : 0;
-        const totalTasks = this.tm.tasks.length;
-        const totalDone = this.tm.tasks.filter(t => t.done).length;
         const totalFocus = this.tm.tasks.reduce((s, t) => s + (t.focusMinutes || 0), 0);
-        const avgScore = totalTasks ? Math.round(this.tm.tasks.reduce((s, t) => s + this.tm.score(t), 0) / totalTasks) : 0;
+        const streak = this._calcStreak();
 
-        // Weekly data
+        // SVG progress ring
+        const r = 54, circ = 2 * Math.PI * r;
+        const offset = circ - (pct / 100) * circ;
+        const ringHTML = `<div class="progress-ring">
+            <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle class="progress-ring__bg" cx="65" cy="65" r="${r}" stroke-width="12"/>
+                <circle class="progress-ring__fill" cx="65" cy="65" r="${r}" stroke-width="12"
+                    stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+            </svg>
+            <div class="progress-ring__text">
+                <div class="progress-ring__pct">${pct}%</div>
+                <div class="progress-ring__sub">${stats.done} of ${stats.total} tasks</div>
+            </div>
+        </div>`;
+
+        // Quick stats row
+        const statsHTML = `<div class="overview-grid" style="grid-template-columns: repeat(3, 1fr)">
+            <div class="stat-card stat-card--streak">
+                <div class="stat-card__value">${streak}&#128293;</div>
+                <div class="stat-card__label">Day Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__value">${totalFocus}m</div>
+                <div class="stat-card__label">Focus Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card__value">${this.tm.tasks.filter(t => t.pomodoros > 0).reduce((s, t) => s + t.pomodoros, 0)}</div>
+                <div class="stat-card__label">Pomodoros</div>
+            </div>
+        </div>`;
+
+        // Category breakdown
+        const catMap = {};
+        this.tm.tasks.forEach(t => {
+            const cat = t.category || 'Uncategorized';
+            if (!catMap[cat]) catMap[cat] = { total: 0, done: 0 };
+            catMap[cat].total++;
+            if (t.done) catMap[cat].done++;
+        });
+        const cats = Object.entries(catMap).sort((a, b) => b[1].total - a[1].total).slice(0, 6);
+        const maxCat = Math.max(...cats.map(c => c[1].total), 1);
+        const catColors = ['#5b5bff', '#ff6b6b', '#51cf66', '#fcc419', '#845ef7', '#20c997'];
+        const catHTML = cats.length > 0 ? `<div class="category-bars">${cats.map(([name, data], i) =>
+            `<div class="cat-bar">
+                <div class="cat-bar__label">${esc(name)}</div>
+                <div class="cat-bar__track"><div class="cat-bar__fill" style="width:${data.total / maxCat * 100}%;background:${catColors[i % catColors.length]}"></div></div>
+                <div class="cat-bar__count">${data.done}/${data.total}</div>
+            </div>`).join('')}</div>` : '';
+
+        // Weekly completions chart
         const week = this.rm.getWeek();
         const weekData = week.map(d => {
             const dayTasks = this.tm.tasks.filter(t => t.completedAt && t.completedAt.startsWith(d.date));
             return { ...d, completed: dayTasks.length };
         });
         const maxCompleted = Math.max(...weekData.map(d => d.completed), 1);
+        const weekHTML = `<div class="weekly-chart">
+            ${weekData.map(d => `<div class="weekly-chart__bar${d.isToday ? ' weekly-chart__bar--today' : ''}" style="height:${Math.max(4, d.completed / maxCompleted * 100)}%"><span class="weekly-chart__label">${d.day}</span></div>`).join('')}
+        </div>`;
+
+        // Focus time sparkline (last 7 days)
+        const sparkData = this._getFocusSparkline();
+        const sparkHTML = this._renderSparkline(sparkData);
+
+        // Energy distribution
+        const energyMap = [0, 0, 0, 0, 0]; // indices 0-4 for energy 1-5
+        this.tm.tasks.filter(t => !t.done).forEach(t => {
+            const e = Math.min(5, Math.max(1, t.energy || 3));
+            energyMap[e - 1]++;
+        });
+        const maxE = Math.max(...energyMap, 1);
+        const energyLabels = ['&#9749;', '&#128524;', '&#128522;', '&#9889;', '&#128293;'];
+        const energyColors = ['#74c0fc', '#51cf66', '#fcc419', '#ff922b', '#ff6b6b'];
+        const energyHTML = `<div class="energy-grid">${energyMap.map((count, i) =>
+            `<div class="energy-col">
+                <div class="energy-col__bar" style="height:${Math.max(4, count / maxE * 60)}px;background:${energyColors[i]}"></div>
+                <div class="energy-col__label">${energyLabels[i]}</div>
+            </div>`).join('')}</div>`;
+
+        // Milestones section
+        const upcomingMs = this.mm ? this.mm.getUpcoming(30) : [];
+        const msHTML = upcomingMs.length > 0 ? `<div class="overview-section">
+            <div class="overview-section__title">Upcoming Milestones</div>
+            <div class="category-bars">${upcomingMs.map(m => {
+                const linked = this.tm.tasks.filter(t => t.milestoneId === m.id);
+                const linkedDone = linked.filter(t => t.done).length;
+                const pctM = linked.length ? Math.round(linkedDone / linked.length * 100) : 0;
+                return `<div class="cat-bar" style="padding:0.5rem 0;border-bottom:1px solid var(--c-border)">
+                    <div style="display:flex;align-items:center;gap:0.4rem;min-width:0;flex:1">
+                        <span>&#128204;</span>
+                        <span class="cat-bar__label" style="min-width:0;flex:1">${esc(m.title)}</span>
+                    </div>
+                    <span style="font-size:0.7rem;font-weight:600;color:#7C3AED;white-space:nowrap">${this.mm.formatCountdown(m.date)}</span>
+                    ${linked.length ? `<span style="font-size:0.65rem;color:var(--c-text-muted);margin-left:0.5rem">${linkedDone}/${linked.length}</span>` : ''}
+                </div>`;
+            }).join('')}</div>
+        </div>` : '';
 
         this.container.innerHTML = `
-            <div class="overview-grid">
-                <div class="stat-card">
-                    <div class="stat-card__value">${pct}%</div>
-                    <div class="stat-card__label">Today's Progress</div>
+            <div class="overview-section">
+                <div class="overview-section__title">Today's Progress</div>
+                ${ringHTML}
+            </div>
+            ${msHTML}
+            ${statsHTML}
+            <div class="overview-section">
+                <div class="overview-section__title">Weekly Completions</div>
+                ${weekHTML}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+                <div class="overview-section" style="margin-bottom:0">
+                    <div class="overview-section__title">Focus Trend (7d)</div>
+                    ${sparkHTML}
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card__value">${stats.done}/${stats.total}</div>
-                    <div class="stat-card__label">Tasks Done Today</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__value">${totalFocus}m</div>
-                    <div class="stat-card__label">Total Focus Time</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card__value">${avgScore}</div>
-                    <div class="stat-card__label">Avg Priority Score</div>
+                <div class="overview-section" style="margin-bottom:0">
+                    <div class="overview-section__title">Energy Levels</div>
+                    ${energyHTML}
                 </div>
             </div>
-            <div class="sidebar__label" style="margin-bottom:0.5rem">Weekly Completions</div>
-            <div class="weekly-chart">
-                ${weekData.map(d => `<div class="weekly-chart__bar${d.isToday ? ' weekly-chart__bar--today' : ''}" style="height:${Math.max(4, d.completed / maxCompleted * 100)}%"><span class="weekly-chart__label">${d.day}</span></div>`).join('')}
-            </div>
+            ${cats.length > 0 ? `<div class="overview-section">
+                <div class="overview-section__title">By Category</div>
+                ${catHTML}
+            </div>` : ''}
         `;
+    }
+
+    _calcStreak() {
+        let streak = 0;
+        const d = new Date();
+        for (let i = 0; i < 365; i++) {
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const completed = this.tm.tasks.filter(t => t.completedAt && t.completedAt.startsWith(dateStr));
+            if (completed.length > 0) {
+                streak++;
+            } else if (i > 0) {
+                break; // Allow today to have 0 and still count past streak
+            } else {
+                // Today has 0 completions — check if yesterday starts the streak
+            }
+            d.setDate(d.getDate() - 1);
+        }
+        return streak;
+    }
+
+    _getFocusSparkline() {
+        const data = [];
+        const d = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const nd = new Date(d);
+            nd.setDate(nd.getDate() - i);
+            const dateStr = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}-${String(nd.getDate()).padStart(2, '0')}`;
+            const dayLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][nd.getDay()];
+            // Sum focus minutes from tasks completed on this date or with logged focus
+            const mins = this.tm.tasks
+                .filter(t => t.completedAt && t.completedAt.startsWith(dateStr))
+                .reduce((s, t) => s + (t.focusMinutes || 0), 0);
+            data.push({ day: dayLabel, mins });
+        }
+        return data;
+    }
+
+    _renderSparkline(data) {
+        if (data.every(d => d.mins === 0)) {
+            return `<div class="focus-sparkline"><div style="padding:1rem;color:var(--c-text-muted);font-size:0.8rem">No focus data yet</div></div>`;
+        }
+        const maxM = Math.max(...data.map(d => d.mins), 1);
+        const w = 200, h = 60, px = w / (data.length - 1 || 1), py = 6;
+        const points = data.map((d, i) => [i * px, h - py - (d.mins / maxM) * (h - 2 * py)]);
+        const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+        const area = line + ` L${points[points.length - 1][0].toFixed(1)},${h} L0,${h} Z`;
+        const dots = points.map(p => `<circle class="focus-sparkline__dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3"/>`).join('');
+        return `<div class="focus-sparkline">
+            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+                <path class="focus-sparkline__area" d="${area}"/>
+                <path class="focus-sparkline__path" d="${line}"/>
+                ${dots}
+            </svg>
+            <div class="focus-sparkline__labels">${data.map(d => `<span>${d.day}</span>`).join('')}</div>
+        </div>`;
     }
 }
 
@@ -2290,10 +3206,16 @@ class PriorityFlowApp {
         this.sync = new FirebaseManager(this.bus, this.store, this.tm);
         this.motivational = new MotivationalEngine(this.bus, this.tm);
 
+        this.milestones = new MilestoneManager(this.store);
+        this.deadlineMode = new DeadlineModeManager(this.bus, this.store, this.tm, this.milestones);
+
         this.rankedView = new RankedViewRenderer(this.bus, this.tm, this.modals, this.pomo);
+        this.rankedView.setMilestoneManager(this.milestones);
         this.eisenhowerView = new EisenhowerViewRenderer(this.bus, this.tm);
         this.plannerView = new PlannerViewRenderer(this.bus, this.tm);
-        this.overviewView = new OverviewViewRenderer(this.bus, this.tm, this.reviews);
+        this.calendarView = new CalendarViewRenderer(this.bus, this.tm, this.store);
+        this.calendarView.setMilestoneManager(this.milestones);
+        this.overviewView = new OverviewViewRenderer(this.bus, this.tm, this.reviews, this.milestones);
 
         this.currentView = 'ranked';
         this.currentFilter = 'all';
@@ -2320,7 +3242,11 @@ class PriorityFlowApp {
         this.bus.on('pomodoro:tick', (state) => this._updateActiveTaskBanner(state));
         this.bus.on('pomodoro:sessionComplete', () => { document.getElementById('activeTaskBanner').innerHTML = ''; });
         this.bus.on('pomodoro:stopped', () => { document.getElementById('activeTaskBanner').innerHTML = ''; });
+        this.bus.on('pomodoro:phaseEnd', (data) => this._showPhaseEndPrompt(data));
         this.bus.on('task:started', (task) => this._celebrateStart(task));
+        this.bus.on('deadline:activated', () => this._onDeadlineModeActivated());
+        this.bus.on('deadline:deactivated', () => this._onDeadlineModeDeactivated());
+        this.bus.on('deadline:tick', (cd) => this._renderDeadlineCountdown(cd));
 
         // Intention edit + Brain dump mode init
         this._initIntentionEdit();
@@ -2339,6 +3265,7 @@ class PriorityFlowApp {
             this.currentView = tab.dataset.view;
             document.querySelectorAll('.topbar__tab').forEach(t => t.classList.toggle('active', t.dataset.view === this.currentView));
             document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === this.currentView + 'View'));
+            this._toggleViewControls();
             this._renderCurrentView();
         });
 
@@ -2346,6 +3273,10 @@ class PriorityFlowApp {
         document.getElementById('filterBar').addEventListener('click', (e) => {
             const btn = e.target.closest('[data-filter]');
             if (!btn) return;
+            if (btn.dataset.filter === 'deadline') {
+                this._activateDeadlineMode();
+                return;
+            }
             this.currentFilter = btn.dataset.filter;
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === this.currentFilter));
             this._renderCurrentView();
@@ -2364,6 +3295,7 @@ class PriorityFlowApp {
         document.getElementById('focusNudge').addEventListener('click', () => this._showFocusGames());
         document.getElementById('reviewBtn').addEventListener('click', () => this._showReviewModal());
         document.getElementById('settingsBtn').addEventListener('click', () => this._showSettingsModal());
+        document.getElementById('milestoneBtn').addEventListener('click', () => this._showMilestoneModal());
         document.getElementById('themeBtn').addEventListener('click', () => this.theme.toggle());
         document.getElementById('syncStatus').addEventListener('click', () => {
             this._showSettingsModal();
@@ -2408,14 +3340,11 @@ class PriorityFlowApp {
             const item = e.target.closest('[data-view]');
             if (!item) return;
             const view = item.dataset.view;
-            if (view === 'more') {
-                this._showMobileMoreMenu();
-                return;
-            }
             this.currentView = view;
             document.querySelectorAll('.bottom-nav__item').forEach(i => i.classList.toggle('active', i.dataset.view === view));
             document.querySelectorAll('.topbar__tab').forEach(t => t.classList.toggle('active', t.dataset.view === this.currentView));
             document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === this.currentView + 'View'));
+            this._toggleViewControls();
             this._renderCurrentView();
         });
     }
@@ -2462,12 +3391,26 @@ class PriorityFlowApp {
         this._renderPickForMe();
         this._renderFocusModeBar();
         this._renderBadDayBanner();
+        this._renderMilestoneBanner();
+        this._checkDeadlineSuggestion();
+        if (this.deadlineMode.isActive) this._markIrrelevantTasks();
+    }
+
+    _toggleViewControls() {
+        const hide = ['calendar', 'planner', 'overview'].includes(this.currentView);
+        document.getElementById('filterBar').style.display = hide ? 'none' : '';
+        document.getElementById('quickAdd').style.display = hide ? 'none' : '';
+        document.getElementById('intentionBanner').style.display = hide ? 'none' : '';
+        document.getElementById('focusNudge').style.display = hide ? 'none' : '';
+        document.getElementById('focusModeBar').style.display = hide ? 'none' : '';
+        document.getElementById('milestoneBanner').style.display = hide ? 'none' : '';
     }
 
     _renderCurrentView() {
         if (this.currentView === 'ranked') this.rankedView.render(this.currentFilter, this.searchQuery);
         else if (this.currentView === 'eisenhower') this.eisenhowerView.render(this.currentFilter, this.searchQuery);
         else if (this.currentView === 'planner') this.plannerView.render();
+        else if (this.currentView === 'calendar') this.calendarView.render();
         else if (this.currentView === 'overview') this.overviewView.render();
     }
 
@@ -2634,6 +3577,203 @@ class PriorityFlowApp {
         });
     }
 
+    // ============= MILESTONE UI =============
+    _renderMilestoneBanner() {
+        const banner = document.getElementById('milestoneBanner');
+        if (this.deadlineMode.isActive) { banner.innerHTML = ''; return; }
+        const upcoming = this.milestones.getUpcoming(14);
+        if (upcoming.length === 0) { banner.innerHTML = ''; return; }
+        banner.innerHTML = upcoming.map(m => `<div class="milestone-banner__item" data-ms-id="${m.id}">
+            <span>&#128204;</span>
+            <span>${esc(m.title)}</span>
+            <span class="milestone-banner__countdown">${this.milestones.formatCountdown(m.date)}</span>
+            <button class="milestone-banner__rush" data-ms-rush="${m.id}" title="Enter Deadline Mode">&#128293;</button>
+        </div>`).join('');
+        banner.querySelectorAll('[data-ms-rush]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = Number(btn.dataset.msRush);
+                const m = this.milestones.getById(id);
+                if (m) this.deadlineMode.activate(m.date, m.title, m.id);
+            });
+        });
+    }
+
+    _showMilestoneModal(editId) {
+        this.modals.open((overlay) => {
+            const all = this.milestones.getAll();
+            overlay.innerHTML = `<div class="modal" style="max-width:420px">
+                <div class="modal__header">
+                    <div class="modal__title">&#128204; Milestones</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body">
+                    <div class="form-group">
+                        <label class="form-label">Title</label>
+                        <input class="form-input" id="msTitle" placeholder="Project demo, deadline, review..." maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input class="form-input" id="msDate" type="date">
+                    </div>
+                    <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+                        <button class="btn btn--primary btn--sm" id="msAdd">Add Milestone</button>
+                    </div>
+                    <div id="msList">
+                        ${all.length ? all.map(m => `<div class="cat-bar" data-ms-item="${m.id}" style="padding:0.4rem 0;border-bottom:1px solid var(--c-border)">
+                            <span style="font-size:0.85rem">&#128204; ${esc(m.title)}</span>
+                            <span style="font-size:0.75rem;color:var(--c-text-muted);margin-left:auto">${m.date}</span>
+                            <span style="font-size:0.7rem;font-weight:600;color:#7C3AED;margin-left:0.5rem">${this.milestones.formatCountdown(m.date)}</span>
+                            <button class="btn--icon" data-ms-del="${m.id}" style="font-size:0.8rem;margin-left:0.5rem" title="Delete">&times;</button>
+                        </div>`).join('') : '<div style="font-size:0.8rem;color:var(--c-text-muted)">No milestones yet</div>'}
+                    </div>
+                </div>
+            </div>`;
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+            overlay.querySelector('#msAdd').addEventListener('click', () => {
+                const title = overlay.querySelector('#msTitle').value.trim();
+                const date = overlay.querySelector('#msDate').value;
+                if (!title || !date) return;
+                this.milestones.create({ title, date });
+                this.modals.closeCurrent();
+                this._renderMilestoneBanner();
+                this._showMilestoneModal(); // reopen to show updated list
+            });
+            overlay.querySelectorAll('[data-ms-del]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = Number(btn.dataset.msDel);
+                    this.milestones.delete(id);
+                    // Clear milestoneId from linked tasks
+                    this.tm.tasks.forEach(t => { if (t.milestoneId === id) t.milestoneId = null; });
+                    this.tm.save();
+                    this.modals.closeCurrent();
+                    this._renderMilestoneBanner();
+                    this._showMilestoneModal();
+                });
+            });
+        });
+    }
+
+    // ============= DEADLINE MODE UI =============
+    _activateDeadlineMode() {
+        const upcoming = this.milestones.getUpcoming(7);
+        if (upcoming.length > 0) {
+            const m = upcoming[0];
+            this.deadlineMode.activate(m.date, m.title, m.id);
+        } else {
+            // Show picker modal
+            this.modals.open((overlay) => {
+                overlay.innerHTML = `<div class="modal" style="max-width:360px">
+                    <div class="modal__header">
+                        <div class="modal__title">&#128293; Deadline Rush</div>
+                        <button class="btn--icon modal-close">&times;</button>
+                    </div>
+                    <div class="modal__body">
+                        <p style="font-size:0.85rem;color:var(--c-text-muted);margin-bottom:1rem">Pick a deadline to focus on. All distractions will be removed.</p>
+                        <div class="form-group">
+                            <label class="form-label">Deadline title</label>
+                            <input class="form-input" id="dlTitle" placeholder="What are you racing toward?">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Deadline date</label>
+                            <input class="form-input" id="dlDate" type="date">
+                        </div>
+                    </div>
+                    <div class="modal__footer" style="display:flex;gap:0.5rem;justify-content:flex-end;padding:1rem 1.5rem;border-top:1px solid var(--c-border)">
+                        <button class="btn btn--ghost" id="dlCancel">Cancel</button>
+                        <button class="btn" id="dlGo" style="background:var(--c-danger);color:white">&#128293; Enter Rush Mode</button>
+                    </div>
+                </div>`;
+                overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+                overlay.querySelector('#dlCancel').addEventListener('click', () => this.modals.closeCurrent());
+                overlay.querySelector('#dlGo').addEventListener('click', () => {
+                    const title = overlay.querySelector('#dlTitle').value.trim() || 'Deadline';
+                    const date = overlay.querySelector('#dlDate').value;
+                    if (!date) { overlay.querySelector('#dlDate').focus(); return; }
+                    this.modals.closeCurrent();
+                    this.deadlineMode.activate(date, title, null);
+                });
+            });
+        }
+    }
+
+    _onDeadlineModeActivated() {
+        // Force ranked view
+        this.currentView = 'ranked';
+        this.currentFilter = 'all';
+        document.querySelectorAll('.topbar__tab').forEach(t => t.classList.toggle('active', t.dataset.view === 'ranked'));
+        document.querySelectorAll('.bottom-nav__item').forEach(i => i.classList.toggle('active', i.dataset.view === 'ranked'));
+        document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'rankedView'));
+        // Hide controls
+        document.getElementById('filterBar').style.display = 'none';
+        document.getElementById('quickAdd').style.display = 'none';
+        document.getElementById('intentionBanner').style.display = 'none';
+        document.getElementById('focusNudge').style.display = 'none';
+        document.getElementById('milestoneBanner').style.display = 'none';
+        // Mark irrelevant tasks
+        this._renderCurrentView();
+        this._markIrrelevantTasks();
+        // Show countdown
+        const cd = this.deadlineMode.getCountdown();
+        this._renderDeadlineCountdown(cd);
+    }
+
+    _onDeadlineModeDeactivated() {
+        document.getElementById('deadlineCountdown').innerHTML = '';
+        this._toggleViewControls();
+        this._renderAll();
+        this.motivational.toast('Deadline mode ended. Great focus!', 'success');
+    }
+
+    _renderDeadlineCountdown(cd) {
+        const el = document.getElementById('deadlineCountdown');
+        if (!this.deadlineMode.isActive) { el.innerHTML = ''; return; }
+        const h = String(cd.hours).padStart(2, '0');
+        const m = String(cd.minutes).padStart(2, '0');
+        const s = String(cd.seconds).padStart(2, '0');
+        const existing = el.querySelector('.deadline-countdown__time');
+        if (existing) {
+            existing.textContent = `${h}:${m}:${s}`;
+        } else {
+            el.innerHTML = `
+                <div class="deadline-countdown__time">${h}:${m}:${s}</div>
+                <div class="deadline-countdown__label">until <span class="deadline-countdown__target">${esc(this.deadlineMode._targetTitle)}</span></div>
+                <button class="deadline-countdown__exit" id="deadlineExit">Exit Deadline Mode</button>`;
+            el.querySelector('#deadlineExit').addEventListener('click', () => this.deadlineMode.deactivate());
+        }
+    }
+
+    _markIrrelevantTasks() {
+        if (!this.deadlineMode.isActive) return;
+        const relevantIds = this.deadlineMode.getRelevantTaskIds();
+        this.rankedView.container.querySelectorAll('.task-card-wrapper').forEach(w => {
+            const id = Number(w.dataset.id);
+            w.classList.toggle('task-card--irrelevant', !relevantIds.has(id));
+        });
+    }
+
+    _checkDeadlineSuggestion() {
+        if (this.deadlineMode.isActive) return;
+        const suggestion = this.deadlineMode.checkAutoSuggest();
+        if (!suggestion) { document.getElementById('deadlineSuggest').innerHTML = ''; return; }
+        const el = document.getElementById('deadlineSuggest');
+        el.innerHTML = `<div class="deadline-suggest">
+            <span>&#128293; <strong>${esc(suggestion.title)}</strong> is ${this.milestones.formatCountdown(suggestion.date)}. Enter Deadline Mode?</span>
+            <div class="deadline-suggest__actions">
+                <button class="deadline-suggest__btn deadline-suggest__btn--enter" id="dlSuggestEnter">Enter</button>
+                <button class="deadline-suggest__btn deadline-suggest__btn--dismiss" id="dlSuggestDismiss">Dismiss</button>
+            </div>
+        </div>`;
+        el.querySelector('#dlSuggestEnter').addEventListener('click', () => {
+            el.innerHTML = '';
+            this.deadlineMode.activate(suggestion.date, suggestion.title, suggestion.milestoneId);
+        });
+        el.querySelector('#dlSuggestDismiss').addEventListener('click', () => {
+            this.deadlineMode.dismissSuggestion(suggestion.milestoneId || `task_${suggestion.title}`);
+            el.innerHTML = '';
+        });
+    }
+
     // ============= ACTIVE TASK BANNER (during Pomodoro) =============
     _updateActiveTaskBanner(state) {
         if (!state || !state.isRunning) return;
@@ -2678,6 +3818,40 @@ class PriorityFlowApp {
         }
     }
 
+    _showPhaseEndPrompt({ phase, state }) {
+        const banner = document.getElementById('activeTaskBanner');
+        if (phase === 'focus') {
+            banner.innerHTML = `<div class="active-task-banner" data-phase="done">
+                <span>&#127881; Focus session complete!</span>
+                <div class="active-task-banner__info"><strong>${esc(state.taskTitle)}</strong></div>
+                <div class="active-task-banner__controls">
+                    <button id="phaseBreak">&#9749; Take break</button>
+                    <button id="phaseExtend">&#43; 5 min</button>
+                    <button id="phaseEnd">&#9632; End</button>
+                </div>
+            </div>`;
+            banner.querySelector('#phaseBreak').addEventListener('click', () => {
+                const isLong = state.sessions % 4 === 0;
+                this.pomo.startBreak(isLong);
+            });
+            banner.querySelector('#phaseExtend').addEventListener('click', () => this.pomo.extend(5));
+            banner.querySelector('#phaseEnd').addEventListener('click', () => { this.pomo.stop(); banner.innerHTML = ''; });
+        } else {
+            banner.innerHTML = `<div class="active-task-banner" data-phase="done">
+                <span>&#9749; Break's over!</span>
+                <div class="active-task-banner__info"><strong>${esc(state.taskTitle)}</strong></div>
+                <div class="active-task-banner__controls">
+                    <button id="phaseFocus">&#127813; Continue focusing</button>
+                    <button id="phaseExtendBreak">&#43; 5 min break</button>
+                    <button id="phaseEnd">&#9632; End</button>
+                </div>
+            </div>`;
+            banner.querySelector('#phaseFocus').addEventListener('click', () => this.pomo.startNextFocus());
+            banner.querySelector('#phaseExtendBreak').addEventListener('click', () => this.pomo.extend(5));
+            banner.querySelector('#phaseEnd').addEventListener('click', () => { this.pomo.stop(); banner.innerHTML = ''; });
+        }
+    }
+
     // ============= CELEBRATE STARTING (effort-based celebration) =============
     _celebrateStart(task) {
         const msgs = [
@@ -2696,7 +3870,9 @@ class PriorityFlowApp {
         if (undone.length === 0) { el.innerHTML = ''; return; }
         el.innerHTML = `<div class="pick-for-me"><button class="btn btn--primary" id="pickForMeBtn">&#127922; Pick</button></div>`;
         el.querySelector('#pickForMeBtn').addEventListener('click', () => {
-            const task = undone[0];
+            // Pick from top 5 randomly to shake things up, weighted toward higher priority
+            const pool = undone.slice(0, Math.min(5, undone.length));
+            const task = pool[Math.floor(Math.random() * pool.length)];
             this.motivational.toast(`Let's do: "${task.title}"`, 'success');
             this._launchCountdown(task);
         });
@@ -2940,7 +4116,7 @@ class PriorityFlowApp {
 
     // ============= WHAT'S NEW (for returning users) =============
     _checkWhatsNew() {
-        const currentVersion = 'v2.0';
+        const currentVersion = 'v3.0';
         const seenVersion = this.store.get('pf.whatsNewSeen', '');
         if (seenVersion === currentVersion) return;
 
@@ -2948,32 +4124,28 @@ class PriorityFlowApp {
         overlay.className = 'whats-new-overlay';
         overlay.innerHTML = `<div class="whats-new">
             <div class="whats-new__badge">What's New</div>
-            <div class="whats-new__title">PriorityFlow just got a big upgrade</div>
-            <div class="whats-new__subtitle">New features designed for the way your brain actually works.</div>
+            <div class="whats-new__title">PriorityFlow v3.0 is here</div>
+            <div class="whats-new__subtitle">Milestones, expandable tasks, and a brand new Deadline Rush mode.</div>
             <div class="whats-new__list">
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#9203;</span>
-                    <div class="whats-new__item-text"><strong>Just 5 Minutes</strong> — Can't start? Commit to just 5 minutes. That's often all it takes.</div>
+                    <span class="whats-new__item-icon">&#128204;</span>
+                    <div class="whats-new__item-text"><strong>Milestones</strong> — Pin key dates like presentations or deadlines. Link tasks to milestones for structured planning.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#127922;</span>
-                    <div class="whats-new__item-text"><strong>Pick For Me</strong> — Decision paralysis? One tap picks your top task and launches it.</div>
+                    <span class="whats-new__item-icon">&#128203;</span>
+                    <div class="whats-new__item-text"><strong>Expandable Tasks</strong> — Tap any task to see notes, add quick points, toggle subtasks, and check deadline progress.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#127919;</span>
-                    <div class="whats-new__item-text"><strong>Focus Mode</strong> — Overwhelmed? See only your top 3 tasks. Auto-activates on low energy days.</div>
+                    <span class="whats-new__item-icon">&#128293;</span>
+                    <div class="whats-new__item-text"><strong>Deadline Rush</strong> — Thrive under pressure? Enter an adrenaline mode that strips away noise and counts down to your deadline.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#128173;</span>
-                    <div class="whats-new__item-text"><strong>Brain Dump</strong> — Rapid-fire capture everything in your head. Sort it later.</div>
+                    <span class="whats-new__item-icon">&#128200;</span>
+                    <div class="whats-new__item-text"><strong>Overview Dashboard</strong> — Progress rings, streaks, focus sparklines, energy charts, and category breakdowns at a glance.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#128156;</span>
-                    <div class="whats-new__item-text"><strong>No Streak Shaming</strong> — Missed a day? Fresh start, not a failure. Bad day mode reduces your load.</div>
-                </div>
-                <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#127919;</span>
-                    <div class="whats-new__item-text"><strong>Editable Daily Focus</strong> — Tap "Today's Focus" anytime to set or change your intention.</div>
+                    <span class="whats-new__item-icon">&#127925;</span>
+                    <div class="whats-new__item-text"><strong>Smarter Pomodoro</strong> — Timer now beeps and asks to extend or end instead of auto-cycling. You stay in control.</div>
                 </div>
             </div>
             <button class="btn btn--primary" id="wnDismiss" style="min-width:180px">Got it!</button>
@@ -3141,6 +4313,13 @@ class PriorityFlowApp {
                             </select>
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Milestone</label>
+                        <select class="form-select" id="taskMilestone">
+                            <option value="">None</option>
+                            ${this.milestones.getAll().map(m => `<option value="${m.id}"${isEdit && task.milestoneId === m.id ? ' selected' : ''}>${esc(m.title)} (${m.date})</option>`).join('')}
+                        </select>
+                    </div>
                     <div class="sidebar__label" style="margin-top:0.75rem;margin-bottom:0.5rem">Priority Scores <span style="font-weight:400;text-transform:none;letter-spacing:0">(1 = lowest, 5 = highest)</span></div>
                     <div class="form-row">
                         <div class="form-group">
@@ -3222,6 +4401,7 @@ class PriorityFlowApp {
                     impact: Number(modal.querySelector('#taskImpact').value),
                     energy: Number(modal.querySelector('#taskEnergy').value),
                     interest: Number(modal.querySelector('#taskInterest').value),
+                    milestoneId: Number(modal.querySelector('#taskMilestone').value) || null,
                     recurrence: recType ? { type: recType, recurrenceId: isEdit && task.recurrence?.recurrenceId ? task.recurrence.recurrenceId : `rec_${Date.now()}` } : null,
                     subtasks: subtasks.map((text, i) => {
                         if (isEdit && task.subtasks[i]) return { ...task.subtasks[i], text };
