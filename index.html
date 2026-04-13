@@ -289,7 +289,7 @@ a { color: var(--c-primary); text-decoration: none; }
 .calendar__event--task { background: var(--c-primary-bg); color: var(--c-primary); }
 .calendar__event--meeting { background: var(--c-warning-bg); color: var(--c-warning); }
 .calendar__event--done { background: var(--c-success-bg); color: var(--c-success); text-decoration: line-through; opacity: 0.7; }
-.calendar__event--overdue { background: var(--c-danger-bg); color: var(--c-danger); }
+.calendar__event--overdue, .calendar__event--waiting { background: var(--c-danger-bg); color: var(--c-danger); }
 .calendar__more { font-size: 0.6rem; color: var(--c-text-muted); padding: 0.1rem 0.3rem; }
 .calendar__import { margin-top: 1rem; text-align: center; }
 @media (max-width: 768px) { .calendar__cell { min-height: 60px; } }
@@ -767,6 +767,93 @@ a { color: var(--c-primary); text-decoration: none; }
 .f1-light.on { background: var(--c-danger); }
 .f1-light.go { background: var(--c-success); }
 
+/* ============= BREATHING EXERCISE ============= */
+.breathe-circle {
+    width: 160px; height: 160px; border-radius: 50%;
+    background: radial-gradient(circle, var(--c-primary-bg) 0%, transparent 70%);
+    border: 3px solid var(--c-primary);
+    display: flex; align-items: center; justify-content: center;
+    margin: 2rem auto; font-size: 1.1rem; font-weight: 600; color: var(--c-primary);
+    transition: transform 4s ease-in-out, border-color 4s;
+}
+.breathe-circle--inhale { transform: scale(1.4); border-color: var(--c-success); }
+.breathe-circle--hold { transform: scale(1.4); border-color: var(--c-warning); }
+.breathe-circle--exhale { transform: scale(1); border-color: var(--c-primary); }
+.breathe-progress { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+.breathe-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-border); transition: background 0.3s; }
+.breathe-dot.active { background: var(--c-primary); }
+.grounding-step { text-align: center; padding: 1.5rem; }
+.grounding-step__number { font-size: 3rem; font-weight: 900; color: var(--c-primary); line-height: 1; }
+.grounding-step__label { font-size: 1rem; color: var(--c-text-muted); margin: 0.5rem 0; }
+.grounding-step__prompt { font-size: 1.1rem; font-weight: 600; margin: 1rem 0; }
+
+/* ============= BODY SIGNAL REMINDERS ============= */
+.toast--body { border-left-color: #60A5FA; background: var(--c-bg); }
+.toast--body::before { content: ''; display: inline-block; margin-right: 0.5rem; }
+
+/* ============= EMOTION CHECK ============= */
+.emotion-check { text-align: center; padding: 1rem 0; }
+.emotion-check__title { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+.emotion-check__subtitle { font-size: 0.85rem; color: var(--c-text-muted); margin-bottom: 1.25rem; }
+.emotion-check__options { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+.emotion-check__btn {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 0.75rem 1rem; border-radius: var(--radius); border: 2px solid var(--c-border);
+    background: var(--c-surface); cursor: pointer; transition: all 0.2s; min-width: 80px;
+}
+.emotion-check__btn:hover { border-color: var(--c-primary); background: var(--c-primary-bg); }
+.emotion-check__btn span:first-child { font-size: 1.5rem; }
+.emotion-check__btn span:last-child { font-size: 0.75rem; font-weight: 600; }
+
+/* ============= XP BAR ============= */
+.xp-bar { height: 6px; background: var(--c-border); border-radius: 3px; overflow: hidden; margin: 0.5rem 0; }
+.xp-bar__fill { height: 100%; background: linear-gradient(90deg, var(--c-primary), #A855F7); border-radius: 3px; transition: width 0.6s ease; }
+.xp-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; font-weight: 700; color: var(--c-primary); }
+.level-up-overlay {
+    position: fixed; inset: 0; z-index: 5000; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+.level-up-card {
+    background: var(--c-bg); border-radius: var(--radius-lg); padding: 2.5rem;
+    text-align: center; max-width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: countPop 0.5s ease;
+}
+.level-up-card__icon { font-size: 3rem; margin-bottom: 0.5rem; }
+.level-up-card__title { font-size: 1.5rem; font-weight: 900; color: var(--c-primary); }
+.level-up-card__subtitle { font-size: 0.9rem; color: var(--c-text-muted); margin: 0.5rem 0 1.5rem; }
+.achievement-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.75rem; }
+.achievement-card {
+    padding: 1rem; border-radius: var(--radius); border: 2px solid var(--c-border);
+    text-align: center; transition: all 0.2s;
+}
+.achievement-card.unlocked { border-color: var(--c-primary); background: var(--c-primary-bg); }
+.achievement-card.locked { opacity: 0.4; filter: grayscale(1); }
+.achievement-card__icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+.achievement-card__name { font-size: 0.75rem; font-weight: 600; }
+
+/* ============= CONTEXT BANNER ============= */
+.context-banner {
+    background: var(--c-primary-bg); border: 1px solid var(--c-primary); border-radius: var(--radius);
+    padding: 0.75rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
+    animation: slideDown 0.3s ease;
+}
+.context-banner__text { flex: 1; font-size: 0.85rem; }
+.context-banner__text strong { font-weight: 700; }
+.context-banner__actions { display: flex; gap: 0.5rem; }
+
+/* ============= EMOJI RAIN ============= */
+.emoji-rain { position: fixed; top: -50px; font-size: 1.5rem; animation: emojiDrop 2s ease-in forwards; pointer-events: none; z-index: 4000; }
+@keyframes emojiDrop { from { transform: translateY(0) rotate(0deg); opacity: 1; } to { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
+
+/* ============= TIME CAPACITY BAR ============= */
+.capacity-bar { height: 12px; background: var(--c-border); border-radius: 6px; overflow: hidden; margin: 0.5rem 0; position: relative; }
+.capacity-bar__fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+.capacity-bar--ok .capacity-bar__fill { background: var(--c-success); }
+.capacity-bar--tight .capacity-bar__fill { background: var(--c-warning); }
+.capacity-bar--over .capacity-bar__fill { background: var(--c-danger); }
+.capacity-bar__label { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.6rem; font-weight: 700; }
+
 /* ============= TOAST ============= */
 .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 3000; display: flex; flex-direction: column-reverse; gap: 0.5rem; pointer-events: none; }
 .toast {
@@ -989,6 +1076,7 @@ a { color: var(--c-primary); text-decoration: none; }
                     <button class="btn btn--primary btn--sm" id="addTaskBtn">+ Task</button>
                     <button class="btn--icon" id="brainDumpBtn" title="Brain Dump" style="font-size:1.2rem">&#128173;</button>
                     <button class="btn--icon" id="focusGameBtn" title="Struggling to focus?" style="font-size:1.2rem">&#129504;</button>
+                    <button class="btn--icon" id="breatheBtn" title="Feeling overwhelmed? Breathe." style="font-size:1.2rem">&#127800;</button>
                     <button class="btn--icon" id="milestoneBtn" title="Milestones" style="font-size:1.1rem">&#128204;</button>
                     <button class="btn--icon" id="reviewBtn" title="Daily Review">&#128203;</button>
                     <button class="btn--icon" id="settingsBtn" title="Settings">&#9881;</button>
@@ -1005,6 +1093,9 @@ a { color: var(--c-primary); text-decoration: none; }
 
                 <!-- Deadline suggestion banner -->
                 <div id="deadlineSuggest"></div>
+
+                <!-- Context preservation banner -->
+                <div id="contextBanner"></div>
 
                 <!-- Bad day mode banner -->
                 <div id="badDayBanner"></div>
@@ -1174,6 +1265,7 @@ class TaskManager {
             scheduledTime: data.scheduledTime || null,
             dueDate: data.dueDate || null,
             milestoneId: data.milestoneId || null,
+            skipCount: 0,
             done: false,
             completedAt: null,
             createdAt: new Date().toISOString(),
@@ -1964,40 +2056,98 @@ class ReviewManager {
     }
 }
 
-// ============= MOTIVATIONAL ENGINE =============
+// ============= MOTIVATIONAL ENGINE (v2 — variable rewards, compassionate language, effort tracking) =============
 class MotivationalEngine {
-    constructor(bus, taskManager) {
+    constructor(bus, taskManager, storage) {
         this.bus = bus;
         this.tm = taskManager;
+        this.store = storage;
         this._toastRoot = document.getElementById('toastRoot');
         this._lastNudge = 0;
 
-        bus.on('task:completed', (task) => this._onComplete(task));
-        bus.on('pomodoro:sessionComplete', () => this._onPomodoroComplete());
-        bus.on('morning:completed', () => this.toast('Great morning check-in! Your day is set up for success.', 'success'));
+        // Effort counters (daily, reset on date change)
+        this._effort = this.store.get('pf.effort.' + getDateStr(), { focusMin: 0, tasksStarted: 0, hardStarted: 0, pomSessions: 0 });
 
-        // Idle nudge every 30 min
+        bus.on('task:completed', (task) => this._onComplete(task));
+        bus.on('pomodoro:sessionComplete', (state) => this._onPomodoroComplete(state));
+        bus.on('morning:completed', () => {
+            const morningMsgs = [
+                'Morning check-in done — your day has direction now.',
+                'You showed up. That matters more than you think.',
+                'Day is set up. One thing at a time.',
+                'Great start — you\'re already ahead of yesterday.',
+            ];
+            this.toast(this._pick(morningMsgs), 'success');
+        });
+
+        // Effort milestones
+        bus.on('pomodoro:started', () => {
+            this._effort.tasksStarted++;
+            this._saveEffort();
+        });
+
         setInterval(() => this._nudgeCheck(), 30 * 60 * 1000);
     }
 
+    _saveEffort() { this.store.set('pf.effort.' + getDateStr(), this._effort); }
+    _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
     _onComplete(task) {
-        const msgs = ['Nice work!', 'One down, keep going!', 'Task crushed!', "That's how it's done!", 'You\'re making progress!'];
-        const todayMsgs = ['Key task done! You\'re on track.', 'Today\'s priorities are shrinking!'];
-        const todoMsgs = ['Quick win! Now tackle the big one.', 'Todo done — momentum building!', 'Checked off! Keep the flow going.'];
+        // Compassionate, varied messages
+        const msgs = [
+            'Done! Every finished task is proof you can.',
+            'Another one down — you\'re moving forward.',
+            'Look at that — progress in action.',
+            'Checked off. Your future self thanks you.',
+            'That took effort, and you did it anyway.',
+            'One less thing on your mind.',
+            'You showed up and got it done.',
+            'Small step, real progress.',
+            'That\'s momentum. Keep riding it.',
+            'You didn\'t have to feel ready — you just started.',
+        ];
+        const todayMsgs = [
+            'Key task done — today is shaping up well.',
+            'One of today\'s priorities? Handled.',
+            'Today\'s list just got lighter.',
+            'You\'re making today count.',
+        ];
+        const todoMsgs = [
+            'Quick win — momentum is building.',
+            'Checked off! What felt hard is now done.',
+            'Small wins add up fast.',
+        ];
+
+        // Pick message
+        let msg;
         if (task.type === 'todo') {
-            this.toast(todoMsgs[Math.floor(Math.random() * todoMsgs.length)], 'success');
-            // Focus boost: highlight next top task
+            msg = this._pick(todoMsgs);
             setTimeout(() => {
                 const topCard = document.querySelector('.task-card-wrapper .task-card:not(.done)');
                 if (topCard) { topCard.classList.add('highlight-next'); topCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => topCard.classList.remove('highlight-next'), 5000); }
             }, 400);
         } else if (task.streak && task.streak.current >= 7) {
-            this.toast(`${task.streak.current}-day streak! You're building a real habit.`, 'success');
+            msg = `${task.streak.current}-day streak — this is becoming part of who you are.`;
         } else if (task.day === 'Today') {
-            this.toast(todayMsgs[Math.floor(Math.random() * todayMsgs.length)], 'success');
+            msg = this._pick(todayMsgs);
         } else {
-            this.toast(msgs[Math.floor(Math.random() * msgs.length)], 'success');
+            msg = this._pick(msgs);
         }
+
+        // Variable reward roll (20% chance of bonus)
+        const roll = Math.random();
+        if (roll < 0.08) {
+            // Emoji rain (8% chance)
+            this.toast(msg + ' ✨ Bonus celebration!', 'success');
+            setTimeout(() => this._emojiRain(), 300);
+        } else if (roll < 0.20) {
+            // Extra confetti (12% chance)
+            this.toast(msg + ' 🎉 Surprise!', 'success');
+            setTimeout(() => this._confetti(), 300);
+        } else {
+            this.toast(msg, 'success');
+        }
+
         // Check if all today tasks are done
         const todayTasks = this.tm.tasks.filter(t => t.day === 'Today');
         const allDone = todayTasks.length > 0 && todayTasks.every(t => t.done);
@@ -2005,24 +2155,82 @@ class MotivationalEngine {
         if (allDone && !celebratedToday) {
             localStorage.setItem('pf.celebrated.' + getDateStr(), '1');
             setTimeout(() => {
-                this.toast('You finished all of today\'s key tasks! Outstanding work.', 'success');
+                this.toast('Every task for today — done. You earned this moment.', 'success');
                 this._confetti();
             }, 600);
         }
+
+        // Time estimation feedback
+        if (task.focusMinutes > 0 && task.duration) {
+            const est = parseInt(task.duration);
+            if (est > 0) {
+                const actual = task.focusMinutes;
+                const ratio = actual / est;
+                if (ratio > 1.5) {
+                    setTimeout(() => this.toast(`This took ${actual}m vs your ${est}m estimate. Totally normal — planning is hard.`, ''), 1500);
+                } else if (ratio < 0.5 && actual > 0) {
+                    setTimeout(() => this.toast(`Done in ${actual}m — faster than your ${est}m estimate! You underestimated yourself.`, 'success'), 1500);
+                }
+                // Store ratio for category learning
+                const cat = task.category || 'Uncategorized';
+                const factors = this.store.get('pf.timeFactors', {});
+                if (!factors[cat]) factors[cat] = [];
+                factors[cat].push(ratio);
+                if (factors[cat].length > 20) factors[cat] = factors[cat].slice(-20);
+                this.store.set('pf.timeFactors', factors);
+            }
+        }
     }
 
-    _onPomodoroComplete() {
-        const msgs = ['Great focus session!', '25 minutes of deep work. Impressive.', 'Another session in the bank.'];
-        this.toast(msgs[Math.floor(Math.random() * msgs.length)]);
+    _onPomodoroComplete(state) {
+        this._effort.pomSessions++;
+        this._saveEffort();
+
+        const msgs = [
+            'Solid focus session — your brain did real work.',
+            'That\'s deep work in the bank.',
+            'Focus session complete. You showed up.',
+            'Another block of focused time. That takes discipline.',
+        ];
+        this.toast(this._pick(msgs));
+
+        // Effort milestone checks
+        if (this._effort.pomSessions === 3) {
+            setTimeout(() => this.toast('3 focus sessions today — you\'re in a flow state.', 'success'), 1500);
+        } else if (this._effort.pomSessions === 5) {
+            setTimeout(() => {
+                this.toast('5 sessions! That\'s serious dedication. Remember to take care of yourself too.', 'success');
+                this._emojiRain();
+            }, 1500);
+        }
     }
 
     _nudgeCheck() {
         if (Date.now() - this._lastNudge < 2 * 60 * 60 * 1000) return;
-        const pom = this.tm.tasks.some(t => t.day === 'Today' && !t.done);
-        if (!pom) return;
-        const msgs = ['Still working? Maybe try a quick focus sprint.', 'Pick one small task and knock it out.', 'Even 5 minutes of progress counts.'];
-        this.toast(msgs[Math.floor(Math.random() * msgs.length)], 'warning');
+        const hasTasks = this.tm.tasks.some(t => t.day === 'Today' && !t.done);
+        if (!hasTasks) return;
+        const msgs = [
+            'Still here? Even 5 minutes of progress counts.',
+            'Pick the smallest thing on your list. Just that.',
+            'No pressure — but one tiny task might feel good.',
+            'Your tasks are patient. Start when you\'re ready.',
+            'Sometimes starting is the hardest part. Try just opening one task.',
+        ];
+        this.toast(this._pick(msgs), 'warning');
         this._lastNudge = Date.now();
+    }
+
+    // Get time estimation hint for a category
+    getTimeHint(category, estimatedMin) {
+        const factors = this.store.get('pf.timeFactors', {});
+        const data = factors[category || 'Uncategorized'];
+        if (!data || data.length < 3) return null;
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        if (avg > 1.3) {
+            const suggested = Math.round(estimatedMin * avg);
+            return `Your ${category || ''} tasks usually take ~${suggested}m (${Math.round(avg * 100)}% of estimate)`;
+        }
+        return null;
     }
 
     toast(message, type = '') {
@@ -2031,8 +2239,22 @@ class MotivationalEngine {
         el.textContent = message;
         this._toastRoot.appendChild(el);
         setTimeout(() => el.remove(), 4000);
-        // Max 2
         while (this._toastRoot.children.length > 2) this._toastRoot.firstChild.remove();
+    }
+
+    _emojiRain() {
+        const emojis = ['⭐', '🎉', '💪', '🔥', '✨', '🌟', '🏆', '💫'];
+        const root = document.getElementById('celebrationRoot');
+        for (let i = 0; i < 20; i++) {
+            const el = document.createElement('div');
+            el.className = 'emoji-rain';
+            el.textContent = this._pick(emojis);
+            el.style.left = (Math.random() * 100) + 'vw';
+            el.style.animationDelay = (Math.random() * 1) + 's';
+            el.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+            root.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
     }
 
     _confetti() {
@@ -2058,22 +2280,259 @@ class MotivationalEngine {
         const animate = () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.1;
-                p.rot += p.rotSpeed;
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate(p.rot * Math.PI / 180);
-                ctx.fillStyle = p.color;
-                ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-                ctx.restore();
+                p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.rot += p.rotSpeed;
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180);
+                ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
             });
             frame++;
             if (frame < 180) requestAnimationFrame(animate);
             else canvas.remove();
         };
         animate();
+    }
+}
+
+// ============= GAMIFICATION MANAGER (XP, Levels, Achievements) =============
+class GamificationManager {
+    static LEVELS = [
+        { xp: 0, title: 'Getting Started', icon: '🌱' },
+        { xp: 50, title: 'Building Momentum', icon: '🌿' },
+        { xp: 150, title: 'Focus Apprentice', icon: '🎯' },
+        { xp: 300, title: 'Task Tamer', icon: '⚡' },
+        { xp: 500, title: 'Flow Finder', icon: '🌊' },
+        { xp: 800, title: 'Productivity Pro', icon: '🔥' },
+        { xp: 1200, title: 'Focus Master', icon: '💎' },
+        { xp: 1800, title: 'Flow Legend', icon: '👑' },
+        { xp: 2500, title: 'Zen Warrior', icon: '🏆' },
+    ];
+
+    static ACHIEVEMENTS = [
+        { id: 'first_task', icon: '🎯', name: 'First Step', desc: 'Complete your first task' },
+        { id: 'streak_3', icon: '🔥', name: 'On a Roll', desc: '3-day streak on any task' },
+        { id: 'streak_7', icon: '💪', name: 'Week Warrior', desc: '7-day streak' },
+        { id: 'streak_30', icon: '🏅', name: 'Monthly Master', desc: '30-day streak' },
+        { id: 'pom_1', icon: '🍅', name: 'First Focus', desc: 'Complete a Pomodoro session' },
+        { id: 'pom_10', icon: '🍅', name: 'Focus Ten', desc: '10 Pomodoro sessions' },
+        { id: 'pom_50', icon: '🍅', name: 'Deep Diver', desc: '50 Pomodoro sessions' },
+        { id: 'tasks_10', icon: '✅', name: 'Getting Things Done', desc: 'Complete 10 tasks' },
+        { id: 'tasks_50', icon: '✅', name: 'Half Century', desc: 'Complete 50 tasks' },
+        { id: 'tasks_100', icon: '🎖️', name: 'Centurion', desc: 'Complete 100 tasks' },
+        { id: 'all_today', icon: '🌟', name: 'Clean Slate', desc: 'Finish all today tasks' },
+        { id: 'all_today_5', icon: '⭐', name: 'Five Perfect Days', desc: 'Clean slate 5 times' },
+        { id: 'morning_7', icon: '🌅', name: 'Morning Person', desc: '7 morning check-ins' },
+        { id: 'review_5', icon: '📝', name: 'Reflective', desc: '5 daily reviews' },
+        { id: 'breathe_1', icon: '🌸', name: 'Centered', desc: 'Complete a breathing exercise' },
+        { id: 'hard_start', icon: '💪', name: 'Brave Start', desc: 'Start a task you were dreading' },
+        { id: 'comeback', icon: '🌈', name: 'Comeback Kid', desc: 'Complete a task after a bad day' },
+    ];
+
+    constructor(bus, storage, taskManager) {
+        this.bus = bus;
+        this.store = storage;
+        this.tm = taskManager;
+        this._data = this.store.get('pf.gamification', { xp: 0, totalTasks: 0, totalPoms: 0, totalMornings: 0, totalReviews: 0, cleanSlates: 0, unlocked: [], breatheCount: 0 });
+
+        bus.on('task:completed', (task) => this._onTask(task));
+        bus.on('pomodoro:sessionComplete', () => this._onPom());
+        bus.on('morning:completed', () => this._onMorning());
+        bus.on('breathe:completed', () => this._onBreathe());
+    }
+
+    get xp() { return this._data.xp; }
+    get level() {
+        let lvl = GamificationManager.LEVELS[0];
+        for (const l of GamificationManager.LEVELS) { if (this._data.xp >= l.xp) lvl = l; }
+        return lvl;
+    }
+    get nextLevel() {
+        const levels = GamificationManager.LEVELS;
+        for (const l of levels) { if (this._data.xp < l.xp) return l; }
+        return null;
+    }
+    get xpProgress() {
+        const next = this.nextLevel;
+        if (!next) return 100;
+        const curr = this.level;
+        return Math.min(100, ((this._data.xp - curr.xp) / (next.xp - curr.xp)) * 100);
+    }
+
+    _save() { this.store.set('pf.gamification', this._data); }
+
+    _addXP(amount) {
+        const oldLevel = this.level;
+        this._data.xp += amount;
+        this._save();
+        const newLevel = this.level;
+        if (newLevel.xp > oldLevel.xp) {
+            this.bus.emit('gamification:levelUp', newLevel);
+        }
+        this.bus.emit('gamification:xpGained', { amount, total: this._data.xp });
+    }
+
+    _unlock(id) {
+        if (this._data.unlocked.includes(id)) return false;
+        this._data.unlocked.push(id);
+        this._save();
+        const ach = GamificationManager.ACHIEVEMENTS.find(a => a.id === id);
+        if (ach) this.bus.emit('gamification:achievement', ach);
+        return true;
+    }
+
+    _onTask(task) {
+        this._data.totalTasks++;
+        // XP: base 10 + priority score bonus
+        const score = (task.urgency || 1) + (task.impact || 1);
+        this._addXP(10 + Math.min(score, 6));
+
+        // Achievement checks
+        if (this._data.totalTasks === 1) this._unlock('first_task');
+        if (this._data.totalTasks >= 10) this._unlock('tasks_10');
+        if (this._data.totalTasks >= 50) this._unlock('tasks_50');
+        if (this._data.totalTasks >= 100) this._unlock('tasks_100');
+
+        if (task.streak) {
+            if (task.streak.current >= 3) this._unlock('streak_3');
+            if (task.streak.current >= 7) this._unlock('streak_7');
+            if (task.streak.current >= 30) this._unlock('streak_30');
+        }
+
+        // Clean slate
+        const todayTasks = this.tm.tasks.filter(t => t.day === 'Today');
+        if (todayTasks.length > 0 && todayTasks.every(t => t.done)) {
+            this._data.cleanSlates++;
+            this._unlock('all_today');
+            if (this._data.cleanSlates >= 5) this._unlock('all_today_5');
+            this._addXP(20); // Bonus for clean slate
+        }
+
+        // Comeback after bad day
+        const morning = this.store.get('pf.morning', {});
+        const today = morning[getDateStr()];
+        if (today && today.energy <= 2) this._unlock('comeback');
+
+        this._save();
+    }
+
+    _onPom() {
+        this._data.totalPoms++;
+        this._addXP(5);
+        if (this._data.totalPoms >= 1) this._unlock('pom_1');
+        if (this._data.totalPoms >= 10) this._unlock('pom_10');
+        if (this._data.totalPoms >= 50) this._unlock('pom_50');
+        this._save();
+    }
+
+    _onMorning() {
+        this._data.totalMornings++;
+        this._addXP(5);
+        if (this._data.totalMornings >= 7) this._unlock('morning_7');
+        this._save();
+    }
+
+    _onBreathe() {
+        this._data.breatheCount++;
+        this._addXP(3);
+        if (this._data.breatheCount >= 1) this._unlock('breathe_1');
+        this._save();
+    }
+
+    onReview() {
+        this._data.totalReviews++;
+        this._addXP(5);
+        if (this._data.totalReviews >= 5) this._unlock('review_5');
+        this._save();
+    }
+
+    markHardStart() {
+        this._unlock('hard_start');
+        this._addXP(5);
+    }
+}
+
+// ============= CONTEXT MANAGER (Working Memory Support) =============
+class ContextManager {
+    constructor(bus, storage, taskManager) {
+        this.bus = bus;
+        this.store = storage;
+        this.tm = taskManager;
+
+        bus.on('pomodoro:started', (state) => this._saveContext(state.taskId));
+        bus.on('pomodoro:stopped', () => this._clearContext());
+
+        // Save context on page hide
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                const ctx = this.store.get('pf.context', null);
+                if (ctx) { ctx.leftAt = Date.now(); this.store.set('pf.context', ctx); }
+            }
+        });
+    }
+
+    _saveContext(taskId) {
+        const task = this.tm.getById(taskId);
+        if (!task) return;
+        const nextSubtask = task.subtasks ? task.subtasks.find(s => !s.done) : null;
+        this.store.set('pf.context', {
+            taskId, taskTitle: task.title,
+            nextStep: nextSubtask ? nextSubtask.text : null,
+            savedAt: Date.now(), leftAt: null,
+        });
+    }
+
+    _clearContext() { this.store.remove('pf.context'); }
+
+    getResumeContext() {
+        const ctx = this.store.get('pf.context', null);
+        if (!ctx) return null;
+        // Only show if context is less than 4 hours old
+        const age = Date.now() - (ctx.leftAt || ctx.savedAt);
+        if (age > 4 * 60 * 60 * 1000) { this._clearContext(); return null; }
+        // Verify task still exists and isn't done
+        const task = this.tm.getById(ctx.taskId);
+        if (!task || task.done) { this._clearContext(); return null; }
+        // Refresh next step
+        const nextSubtask = task.subtasks ? task.subtasks.find(s => !s.done) : null;
+        ctx.nextStep = nextSubtask ? nextSubtask.text : null;
+        return ctx;
+    }
+
+    dismiss() { this._clearContext(); }
+}
+
+// ============= HYPERFOCUS PROTECTOR =============
+class HyperfocusProtector {
+    constructor(bus, storage) {
+        this.bus = bus;
+        this.store = storage;
+        this._cumulativeMin = 0;
+        this._lastReminder = 0;
+        this._thresholds = [45, 60, 90, 120];
+        this._notified = new Set();
+
+        bus.on('pomodoro:sessionComplete', () => {
+            this._cumulativeMin += 25;
+            this._checkBodySignals();
+        });
+        bus.on('pomodoro:stopped', () => {
+            this._cumulativeMin = 0;
+            this._notified.clear();
+        });
+    }
+
+    _checkBodySignals() {
+        for (const t of this._thresholds) {
+            if (this._cumulativeMin >= t && !this._notified.has(t)) {
+                this._notified.add(t);
+                const msgs = {
+                    45: '💧 You\'ve been focused for 45 min — drink some water.',
+                    60: '🧘 60 minutes of focus — time for a quick stretch?',
+                    90: '🍎 90 minutes in! Have you eaten anything recently?',
+                    120: '🚶 2 hours of deep work — your body needs a real break.',
+                };
+                this.bus.emit('body:reminder', { message: msgs[t], threshold: t });
+                break;
+            }
+        }
     }
 }
 
@@ -2455,7 +2914,7 @@ class RankedViewRenderer {
             else if (days > 1) { level = 'soon'; msg = `${days} days to go`; sub = 'Almost there!'; }
             else if (days === 1) { level = 'soon'; msg = 'Due tomorrow'; sub = "You've got this!"; }
             else if (days === 0) { level = 'today'; msg = 'Due today'; sub = "You've got this!"; }
-            else { level = 'overdue'; msg = `${Math.abs(days)} day${Math.abs(days)>1?'s':''} overdue`; sub = "It's okay, let's finish it up"; }
+            else { level = 'overdue'; msg = `${Math.abs(days)} day${Math.abs(days)>1?'s':''} past due`; sub = "It's still here, waiting patiently for you"; }
 
             // Mini arc SVG
             const pct = days > 0 ? Math.max(0, Math.min(100, 100 - (days / 14 * 100))) : 100;
@@ -2739,6 +3198,22 @@ class PlannerViewRenderer {
             </div>`;
         }).join('')}</div>`;
 
+        // Capacity bar
+        const totalTaskMin = todayTasks.reduce((s, t) => s + (t.duration || 30), 0);
+        const availableHours = 8; // Configurable
+        const availableMin = availableHours * 60;
+        const pctUsed = Math.min(Math.round((totalTaskMin / availableMin) * 100), 100);
+        const capLevel = pctUsed <= 70 ? 'ok' : pctUsed <= 90 ? 'tight' : 'over';
+        const capLabel = totalTaskMin >= 60 ? `${Math.floor(totalTaskMin/60)}h ${totalTaskMin%60}m` : `${totalTaskMin}m`;
+        const capBar = `<div style="margin-bottom:0.75rem;font-size:0.8rem">
+            <div style="display:flex;justify-content:space-between;color:var(--c-text-muted);margin-bottom:0.25rem">
+                <span>Day capacity</span>
+                <span>${capLabel} / ${availableHours}h${pctUsed > 90 ? ' ⚠️ overcommitted' : ''}</span>
+            </div>
+            <div class="capacity-bar capacity-bar--${capLevel}"><div class="capacity-bar__fill" style="width:${pctUsed}%"></div></div>
+        </div>`;
+        this.container.insertAdjacentHTML('afterbegin', capBar);
+
         this._attachEvents();
 
         // Scroll to current time
@@ -2887,7 +3362,7 @@ class CalendarViewRenderer {
         // Tasks with due dates
         this.tm.tasks.forEach(t => {
             if (t.dueDate && t.dueDate.startsWith(monthStr)) {
-                const type = t.done ? 'done' : (t.dueDate < getDateStr() ? 'overdue' : 'task');
+                const type = t.done ? 'done' : (t.dueDate < getDateStr() ? 'waiting' : 'task');
                 events.push({ date: t.dueDate, title: t.title, type, taskId: t.id });
             }
             // Tasks with scheduledTime and day = Today — show on today's date
@@ -3165,6 +3640,7 @@ class OverviewViewRenderer {
                 <div class="overview-section__title">Today's Progress</div>
                 ${ringHTML}
             </div>
+            <div id="xpBarSection"></div>
             ${msHTML}
             ${statsHTML}
             <div class="overview-section">
@@ -3256,10 +3732,13 @@ class PriorityFlowApp {
         this.morning = new MorningFlowManager(this.bus, this.store);
         this.reviews = new ReviewManager(this.store);
         this.sync = new FirebaseManager(this.bus, this.store, this.tm);
-        this.motivational = new MotivationalEngine(this.bus, this.tm);
+        this.motivational = new MotivationalEngine(this.bus, this.tm, this.store);
 
         this.milestones = new MilestoneManager(this.store);
         this.deadlineMode = new DeadlineModeManager(this.bus, this.store, this.tm, this.milestones);
+        this.gamification = new GamificationManager(this.bus, this.store, this.tm);
+        this.context = new ContextManager(this.bus, this.store, this.tm);
+        this.hyperfocus = new HyperfocusProtector(this.bus, this.store);
 
         this.rankedView = new RankedViewRenderer(this.bus, this.tm, this.modals, this.pomo);
         this.rankedView.setMilestoneManager(this.milestones);
@@ -3286,8 +3765,8 @@ class PriorityFlowApp {
         this.bus.on('user:updated', () => this._updateUserUI());
         this.bus.on('sync:status', (s) => this._updateSyncUI(s));
         this.bus.on('ui:editTask', (id) => this._showTaskModal(id));
-        this.bus.on('ui:startPomodoro', (id) => this._showPomodoroSetup(id));
-        this.bus.on('ui:launchTask', (id) => { const t = this.tm.getById(id); if (t) this._launchCountdown(t); });
+        this.bus.on('ui:startPomodoro', (id) => this._emotionGate(id, () => this._showPomodoroSetup(id)));
+        this.bus.on('ui:launchTask', (id) => this._emotionGate(id, () => { const t = this.tm.getById(id); if (t) this._launchCountdown(t); }));
         this.bus.on('ui:microTimer', (id) => { const t = this.tm.getById(id); if (t) this._startMicroTimer(t); });
         this.bus.on('morning:completed', (data) => this._onMorningComplete(data));
         this.bus.on('pomodoro:started', (state) => { this._showPomodoroTimer(); this._updateActiveTaskBanner(state); });
@@ -3300,9 +3779,18 @@ class PriorityFlowApp {
         this.bus.on('deadline:deactivated', () => this._onDeadlineModeDeactivated());
         this.bus.on('deadline:tick', (cd) => this._renderDeadlineCountdown(cd));
 
+        // Gamification events
+        this.bus.on('gamification:levelUp', (level) => this._showLevelUp(level));
+        this.bus.on('gamification:achievement', (ach) => this.motivational.toast(`${ach.icon} Achievement: ${ach.name}!`, 'success'));
+        this.bus.on('gamification:xpGained', () => this._updateXPBar());
+        this.bus.on('body:reminder', (data) => this.motivational.toast(data.message, 'body'));
+
         // Intention edit + Brain dump mode init
         this._initIntentionEdit();
         this._initBrainDump();
+
+        // Context preservation check
+        this._checkContext();
 
         // Task notification system & auto-launch
         this._startTaskNotifier();
@@ -3344,6 +3832,7 @@ class PriorityFlowApp {
         document.getElementById('addTaskBtn').addEventListener('click', () => this._showTaskModal());
         document.getElementById('brainDumpBtn').addEventListener('click', () => this._toggleBrainDump());
         document.getElementById('focusGameBtn').addEventListener('click', () => this._showFocusGames());
+        document.getElementById('breatheBtn').addEventListener('click', () => this._showBreatheModal());
         document.getElementById('focusNudge').addEventListener('click', () => this._showFocusGames());
         document.getElementById('reviewBtn').addEventListener('click', () => this._showReviewModal());
         document.getElementById('settingsBtn').addEventListener('click', () => this._showSettingsModal());
@@ -3445,6 +3934,7 @@ class PriorityFlowApp {
         this._renderBadDayBanner();
         this._renderMilestoneBanner();
         this._checkDeadlineSuggestion();
+        this._updateXPBar();
         if (this.deadlineMode.isActive) this._markIrrelevantTasks();
     }
 
@@ -3463,7 +3953,7 @@ class PriorityFlowApp {
         else if (this.currentView === 'eisenhower') this.eisenhowerView.render(this.currentFilter, this.searchQuery);
         else if (this.currentView === 'planner') this.plannerView.render();
         else if (this.currentView === 'calendar') this.calendarView.render();
-        else if (this.currentView === 'overview') this.overviewView.render();
+        else if (this.currentView === 'overview') { this.overviewView.render(); this._updateXPBar(); }
     }
 
     _renderKeyTasks() {
@@ -4168,7 +4658,7 @@ class PriorityFlowApp {
 
     // ============= WHAT'S NEW (for returning users) =============
     _checkWhatsNew() {
-        const currentVersion = 'v3.0';
+        const currentVersion = 'v4.0';
         const seenVersion = this.store.get('pf.whatsNewSeen', '');
         if (seenVersion === currentVersion) return;
 
@@ -4176,28 +4666,32 @@ class PriorityFlowApp {
         overlay.className = 'whats-new-overlay';
         overlay.innerHTML = `<div class="whats-new">
             <div class="whats-new__badge">What's New</div>
-            <div class="whats-new__title">PriorityFlow v3.0 is here</div>
-            <div class="whats-new__subtitle">Milestones, expandable tasks, and a brand new Deadline Rush mode.</div>
+            <div class="whats-new__title">PriorityFlow v4.0 — Your Productivity Buddy</div>
+            <div class="whats-new__subtitle">Built around how ADHD brains actually work. More rewards, more calm, more understanding.</div>
             <div class="whats-new__list">
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#128204;</span>
-                    <div class="whats-new__item-text"><strong>Milestones</strong> — Pin key dates like presentations or deadlines. Link tasks to milestones for structured planning.</div>
+                    <span class="whats-new__item-icon">&#127942;</span>
+                    <div class="whats-new__item-text"><strong>XP & Achievements</strong> — Earn XP, level up, and unlock badges. Variable rewards keep your dopamine flowing.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#128203;</span>
-                    <div class="whats-new__item-text"><strong>Expandable Tasks</strong> — Tap any task to see notes, add quick points, toggle subtasks, and check deadline progress.</div>
+                    <span class="whats-new__item-icon">&#127800;</span>
+                    <div class="whats-new__item-text"><strong>Breathing & Grounding</strong> — Feeling overwhelmed? Box breathing and 5-4-3-2-1 grounding are one tap away.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#128293;</span>
-                    <div class="whats-new__item-text"><strong>Deadline Rush</strong> — Thrive under pressure? Enter an adrenaline mode that strips away noise and counts down to your deadline.</div>
+                    <span class="whats-new__item-icon">&#128161;</span>
+                    <div class="whats-new__item-text"><strong>Context Memory</strong> — "Welcome back! You were working on X." Never lose your place after a break.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#128200;</span>
-                    <div class="whats-new__item-text"><strong>Overview Dashboard</strong> — Progress rings, streaks, focus sparklines, energy charts, and category breakdowns at a glance.</div>
+                    <span class="whats-new__item-icon">&#128150;</span>
+                    <div class="whats-new__item-text"><strong>Emotion Check</strong> — Dreading a task? We'll help you start gently. No shame, just support.</div>
                 </div>
                 <div class="whats-new__item">
-                    <span class="whats-new__item-icon">&#127925;</span>
-                    <div class="whats-new__item-text"><strong>Smarter Pomodoro</strong> — Timer now beeps and asks to extend or end instead of auto-cycling. You stay in control.</div>
+                    <span class="whats-new__item-icon">&#128167;</span>
+                    <div class="whats-new__item-text"><strong>Body Signal Reminders</strong> — Water, stretch, eat reminders after 45+ min of focus. Take care of yourself.</div>
+                </div>
+                <div class="whats-new__item">
+                    <span class="whats-new__item-icon">&#9201;</span>
+                    <div class="whats-new__item-text"><strong>Time Estimation Learning</strong> — Tracks actual vs estimated time and helps you plan more realistically.</div>
                 </div>
             </div>
             <button class="btn btn--primary" id="wnDismiss" style="min-width:180px">Got it!</button>
@@ -4344,6 +4838,7 @@ class PriorityFlowApp {
                             <select class="form-select" id="taskDuration">
                                 ${[5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240].map(d => `<option value="${d}"${isEdit && task.duration === d ? ' selected' : ''}>${d >= 60 ? (d / 60) + 'h' : d + 'm'}</option>`).join('')}
                             </select>
+                            <div class="form-hint" id="timeHint" style="color:var(--c-primary)"></div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Due date</label>
@@ -4429,6 +4924,18 @@ class PriorityFlowApp {
             // Close
             modal.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
             modal.querySelector('#cancelTaskBtn').addEventListener('click', () => this.modals.closeCurrent());
+
+            // Time estimation hint
+            const updateTimeHint = () => {
+                const cat = modal.querySelector('#taskCategory').value;
+                const dur = Number(modal.querySelector('#taskDuration').value);
+                const hint = this.motivational.getTimeHint(cat, dur);
+                const hintEl = modal.querySelector('#timeHint');
+                if (hintEl) hintEl.textContent = hint || '';
+            };
+            modal.querySelector('#taskCategory').addEventListener('change', updateTimeHint);
+            modal.querySelector('#taskDuration').addEventListener('change', updateTimeHint);
+            updateTimeHint();
 
             // Delete
             if (isEdit) {
@@ -4642,6 +5149,7 @@ class PriorityFlowApp {
                     date: today,
                 });
                 this._renderReviewDots();
+                this.gamification.onReview();
                 this.modals.closeCurrent();
             });
 
@@ -4883,15 +5391,20 @@ class PriorityFlowApp {
 
     // --- Task Start Notification ---
     _startTaskNotifier() {
-        this._notifiedTasks = new Set();
+        this._notifiedTasks = new Map(); // taskId -> Set of thresholds notified
         setInterval(() => this._checkUpcomingTasks(), 60 * 1000);
-        // Also check immediately
         setTimeout(() => this._checkUpcomingTasks(), 5000);
+
+        // Request notification permission
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
     }
 
     _checkUpcomingTasks() {
         const now = new Date();
         const nowMin = now.getHours() * 60 + now.getMinutes();
+        const thresholds = [30, 15, 5, 0]; // Cascading reminder thresholds
 
         const todayTasks = this.tm.tasks.filter(t => t.day === 'Today' && !t.done && t.scheduledTime);
         todayTasks.forEach(task => {
@@ -4899,10 +5412,20 @@ class PriorityFlowApp {
             const taskMin = h * 60 + m;
             const diff = taskMin - nowMin;
 
-            // Notify 5 minutes before (or if within 0-5 min window and not yet notified)
-            if (diff >= 0 && diff <= 5 && !this._notifiedTasks.has(task.id)) {
-                this._notifiedTasks.add(task.id);
-                this._showTaskNotification(task, diff);
+            if (!this._notifiedTasks.has(task.id)) this._notifiedTasks.set(task.id, new Set());
+            const notified = this._notifiedTasks.get(task.id);
+
+            for (const t of thresholds) {
+                if (diff >= 0 && diff <= t && !notified.has(t)) {
+                    notified.add(t);
+                    this._showTaskNotification(task, diff);
+                    // Browser notification
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        const timeText = diff <= 0 ? 'Starting now!' : `In ${diff} min`;
+                        new Notification(`${task.title} — ${timeText}`, { body: `${task.duration}m task at ${task.scheduledTime}`, icon: '📋' });
+                    }
+                    break; // Only one notification per check
+                }
             }
         });
     }
@@ -4943,6 +5466,298 @@ class PriorityFlowApp {
                 this.motivational.toast(`${todayTasks.length} tasks today — tap the rocket on a task to launch!`, 'success');
             }, 2000);
         }
+    }
+
+    // ============= BREATHING / GROUNDING EXERCISE =============
+    _showBreatheModal() {
+        this.modals.open((overlay) => {
+            overlay.innerHTML = `<div class="modal" style="max-width:420px">
+                <div class="modal__header">
+                    <div class="modal__title">&#127800; Calm Your Mind</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body" style="text-align:center">
+                    <div style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:1.5rem">
+                        <button class="btn btn--primary btn--sm breathe-tab active" data-tab="breathe">Box Breathing</button>
+                        <button class="btn btn--ghost btn--sm breathe-tab" data-tab="ground">5-4-3-2-1</button>
+                    </div>
+                    <div id="breatheContent">
+                        <div class="breathe-circle" id="breatheCircle">Ready</div>
+                        <div class="breathe-progress" id="breatheDots"></div>
+                        <p style="font-size:0.8rem;color:var(--c-text-muted);margin-top:1rem">4 cycles of: inhale 4s → hold 4s → exhale 4s → hold 4s</p>
+                        <button class="btn btn--primary" id="breatheStart" style="margin-top:1rem;min-width:140px">Start</button>
+                    </div>
+                    <div id="groundContent" style="display:none">
+                        <div class="grounding-step" id="groundStep">
+                            <div class="grounding-step__number">5</div>
+                            <div class="grounding-step__label">things you can</div>
+                            <div class="grounding-step__prompt">SEE</div>
+                        </div>
+                        <p style="font-size:0.8rem;color:var(--c-text-muted)">Take your time with each one. Tap Next when ready.</p>
+                        <button class="btn btn--primary" id="groundNext" style="margin-top:1rem;min-width:140px">Next</button>
+                    </div>
+                </div>
+            </div>`;
+
+            const circle = overlay.querySelector('#breatheCircle');
+            const startBtn = overlay.querySelector('#breatheStart');
+            let breatheTimer = null;
+
+            // Tab switching
+            overlay.querySelectorAll('.breathe-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    overlay.querySelectorAll('.breathe-tab').forEach(t => { t.classList.toggle('active', t === tab); t.className = t.className.replace('btn--primary', 'btn--ghost').replace('btn--ghost', t === tab ? 'btn--primary' : 'btn--ghost') + ' breathe-tab'; });
+                    overlay.querySelector('#breatheContent').style.display = tab.dataset.tab === 'breathe' ? '' : 'none';
+                    overlay.querySelector('#groundContent').style.display = tab.dataset.tab === 'ground' ? '' : 'none';
+                    if (breatheTimer) { clearTimeout(breatheTimer); circle.textContent = 'Ready'; circle.className = 'breathe-circle'; }
+                });
+            });
+
+            // Box breathing
+            startBtn.addEventListener('click', () => {
+                startBtn.style.display = 'none';
+                let cycle = 0;
+                const maxCycles = 4;
+                const phases = [
+                    { text: 'Breathe in...', cls: 'breathe-circle--inhale', dur: 4000 },
+                    { text: 'Hold...', cls: 'breathe-circle--hold', dur: 4000 },
+                    { text: 'Breathe out...', cls: 'breathe-circle--exhale', dur: 4000 },
+                    { text: 'Hold...', cls: 'breathe-circle--hold', dur: 4000 },
+                ];
+                // Dots
+                const dotsEl = overlay.querySelector('#breatheDots');
+                dotsEl.innerHTML = Array.from({length: maxCycles}, (_, i) => `<div class="breathe-dot" data-c="${i}"></div>`).join('');
+
+                const runPhase = (pi) => {
+                    if (cycle >= maxCycles) {
+                        circle.textContent = 'Well done';
+                        circle.className = 'breathe-circle';
+                        this.bus.emit('breathe:completed');
+                        this.motivational.toast('You took a moment for yourself. That\'s strength.', 'success');
+                        startBtn.textContent = 'Again';
+                        startBtn.style.display = '';
+                        return;
+                    }
+                    const p = phases[pi % 4];
+                    circle.textContent = p.text;
+                    circle.className = 'breathe-circle ' + p.cls;
+                    breatheTimer = setTimeout(() => {
+                        if (pi % 4 === 3) {
+                            cycle++;
+                            const dot = dotsEl.querySelector(`[data-c="${cycle - 1}"]`);
+                            if (dot) dot.classList.add('active');
+                        }
+                        runPhase(pi + 1);
+                    }, p.dur);
+                };
+                runPhase(0);
+            });
+
+            // 5-4-3-2-1 Grounding
+            const steps = [
+                { n: 5, sense: 'SEE' }, { n: 4, sense: 'TOUCH' },
+                { n: 3, sense: 'HEAR' }, { n: 2, sense: 'SMELL' }, { n: 1, sense: 'TASTE' },
+            ];
+            let gStep = 0;
+            overlay.querySelector('#groundNext').addEventListener('click', () => {
+                gStep++;
+                if (gStep >= steps.length) {
+                    overlay.querySelector('#groundStep').innerHTML = `
+                        <div class="grounding-step__number">&#10004;</div>
+                        <div class="grounding-step__prompt">You're grounded. You're here. You're okay.</div>`;
+                    overlay.querySelector('#groundNext').textContent = 'Done';
+                    overlay.querySelector('#groundNext').addEventListener('click', () => this.modals.closeCurrent(), { once: true });
+                    this.bus.emit('breathe:completed');
+                    return;
+                }
+                const s = steps[gStep];
+                overlay.querySelector('#groundStep').innerHTML = `
+                    <div class="grounding-step__number">${s.n}</div>
+                    <div class="grounding-step__label">thing${s.n > 1 ? 's' : ''} you can</div>
+                    <div class="grounding-step__prompt">${s.sense}</div>`;
+            });
+
+            overlay.querySelector('.modal-close').addEventListener('click', () => { clearTimeout(breatheTimer); this.modals.closeCurrent(); });
+        });
+    }
+
+    // ============= EMOTION CHECK (before starting dreaded tasks) =============
+    _emotionGate(taskId, proceed) {
+        const task = this.tm.getById(taskId);
+        if (!task) { proceed(); return; }
+
+        // Only gate if: low interest, or task has been skipped 2+ times
+        const isHard = (task.interest || 3) <= 1 || (task.skipCount || 0) >= 2;
+        if (!isHard) { proceed(); return; }
+
+        this.modals.open((overlay) => {
+            overlay.innerHTML = `<div class="modal" style="max-width:380px">
+                <div class="modal__header">
+                    <div class="modal__title">Before you start...</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body">
+                    <div class="emotion-check">
+                        <div class="emotion-check__title">How are you feeling about "${esc(task.title)}"?</div>
+                        <div class="emotion-check__subtitle">No wrong answers — this helps us help you.</div>
+                        <div class="emotion-check__options">
+                            <button class="emotion-check__btn" data-emotion="dreading"><span>😰</span><span>Dreading it</span></button>
+                            <button class="emotion-check__btn" data-emotion="nervous"><span>😬</span><span>Nervous</span></button>
+                            <button class="emotion-check__btn" data-emotion="neutral"><span>😐</span><span>Neutral</span></button>
+                            <button class="emotion-check__btn" data-emotion="ready"><span>💪</span><span>Ready!</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+            overlay.querySelector('.modal-close').addEventListener('click', () => {
+                // Track skip
+                task.skipCount = (task.skipCount || 0) + 1;
+                this.tm.save();
+                this.modals.closeCurrent();
+            });
+
+            overlay.querySelectorAll('[data-emotion]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const emotion = btn.dataset.emotion;
+                    this.modals.closeCurrent();
+
+                    if (emotion === 'ready' || emotion === 'neutral') {
+                        if (emotion === 'ready') this.gamification.markHardStart();
+                        proceed();
+                    } else if (emotion === 'dreading') {
+                        // Offer alternatives
+                        this.modals.open((ov2) => {
+                            ov2.innerHTML = `<div class="modal" style="max-width:360px">
+                                <div class="modal__body" style="text-align:center;padding:1.5rem">
+                                    <p style="font-size:1rem;font-weight:600;margin-bottom:0.5rem">That's completely valid.</p>
+                                    <p style="font-size:0.85rem;color:var(--c-text-muted);margin-bottom:1.5rem">Here are some ways to make it easier:</p>
+                                    <div style="display:flex;flex-direction:column;gap:0.75rem">
+                                        <button class="btn btn--primary" data-action="5min">Just 5 minutes — then decide</button>
+                                        <button class="btn btn--ghost" data-action="breathe">Breathe first, then try</button>
+                                        <button class="btn btn--ghost" data-action="skip">Not today — and that's okay</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                            ov2.querySelector('[data-action="5min"]').addEventListener('click', () => {
+                                this.modals.closeCurrent();
+                                this.gamification.markHardStart();
+                                this._startMicroTimer(task);
+                            });
+                            ov2.querySelector('[data-action="breathe"]').addEventListener('click', () => {
+                                this.modals.closeCurrent();
+                                this._showBreatheModal();
+                            });
+                            ov2.querySelector('[data-action="skip"]').addEventListener('click', () => {
+                                task.skipCount = (task.skipCount || 0) + 1;
+                                this.tm.save();
+                                this.modals.closeCurrent();
+                                this.motivational.toast('No pressure. You\'ll get to it when the time is right.', '');
+                            });
+                        });
+                    } else if (emotion === 'nervous') {
+                        this.gamification.markHardStart();
+                        this.motivational.toast('Starting is the bravest part. You\'re already ahead.', 'success');
+                        proceed();
+                    }
+                });
+            });
+        });
+    }
+
+    // ============= XP BAR UPDATE =============
+    _updateXPBar() {
+        const el = document.getElementById('xpBarSection');
+        if (!el) return;
+        const g = this.gamification;
+        const level = g.level;
+        const next = g.nextLevel;
+        el.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.25rem">
+                <span class="xp-badge">${level.icon} ${level.title}</span>
+                <span style="font-size:0.7rem;color:var(--c-text-muted)">${g.xp} XP${next ? ` / ${next.xp}` : ''}</span>
+            </div>
+            <div class="xp-bar"><div class="xp-bar__fill" style="width:${g.xpProgress}%"></div></div>`;
+    }
+
+    // ============= LEVEL UP CELEBRATION =============
+    _showLevelUp(level) {
+        const overlay = document.createElement('div');
+        overlay.className = 'level-up-overlay';
+        overlay.innerHTML = `<div class="level-up-card">
+            <div class="level-up-card__icon">${level.icon}</div>
+            <div class="level-up-card__title">Level Up!</div>
+            <div class="level-up-card__subtitle">You are now: ${level.title}</div>
+            <button class="btn btn--primary" id="lvlUpDismiss">Awesome!</button>
+        </div>`;
+        document.body.appendChild(overlay);
+        this.motivational._confetti();
+        overlay.querySelector('#lvlUpDismiss').addEventListener('click', () => {
+            overlay.style.animation = 'fadeIn 0.3s ease reverse forwards';
+            setTimeout(() => overlay.remove(), 300);
+        });
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.style.animation = 'fadeIn 0.3s ease reverse forwards';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        });
+    }
+
+    // ============= CONTEXT PRESERVATION CHECK =============
+    _checkContext() {
+        const ctx = this.context.getResumeContext();
+        if (!ctx) return;
+        const el = document.getElementById('contextBanner');
+        el.innerHTML = `<div class="context-banner">
+            <div class="context-banner__text">
+                &#128161; <strong>Welcome back!</strong> You were working on <strong>${esc(ctx.taskTitle)}</strong>${ctx.nextStep ? `. Next step: ${esc(ctx.nextStep)}` : ''}
+            </div>
+            <div class="context-banner__actions">
+                <button class="btn btn--primary btn--sm" id="ctxResume">Resume</button>
+                <button class="btn btn--ghost btn--sm" id="ctxDismiss">Fresh start</button>
+            </div>
+        </div>`;
+        el.querySelector('#ctxResume').addEventListener('click', () => {
+            el.innerHTML = '';
+            this._showPomodoroSetup(ctx.taskId);
+        });
+        el.querySelector('#ctxDismiss').addEventListener('click', () => {
+            el.innerHTML = '';
+            this.context.dismiss();
+        });
+    }
+
+    // ============= ACHIEVEMENTS MODAL =============
+    _showAchievementsModal() {
+        const g = this.gamification;
+        this.modals.open((overlay) => {
+            const achs = GamificationManager.ACHIEVEMENTS.map(a => {
+                const unlocked = g._data.unlocked.includes(a.id);
+                return `<div class="achievement-card ${unlocked ? 'unlocked' : 'locked'}">
+                    <div class="achievement-card__icon">${a.icon}</div>
+                    <div class="achievement-card__name">${a.name}</div>
+                    <div style="font-size:0.65rem;color:var(--c-text-muted)">${a.desc}</div>
+                </div>`;
+            }).join('');
+
+            overlay.innerHTML = `<div class="modal" style="max-width:500px">
+                <div class="modal__header">
+                    <div class="modal__title">&#127942; Achievements</div>
+                    <button class="btn--icon modal-close">&times;</button>
+                </div>
+                <div class="modal__body">
+                    <div style="text-align:center;margin-bottom:1.5rem">
+                        <div style="font-size:2rem">${g.level.icon}</div>
+                        <div style="font-weight:700;font-size:1.1rem">${g.level.title}</div>
+                        <div style="font-size:0.8rem;color:var(--c-text-muted)">${g.xp} XP total &bull; ${g._data.unlocked.length}/${GamificationManager.ACHIEVEMENTS.length} badges</div>
+                        <div class="xp-bar" style="max-width:200px;margin:0.5rem auto"><div class="xp-bar__fill" style="width:${g.xpProgress}%"></div></div>
+                    </div>
+                    <div class="achievement-grid">${achs}</div>
+                </div>
+            </div>`;
+            overlay.querySelector('.modal-close').addEventListener('click', () => this.modals.closeCurrent());
+        });
     }
 
     _showFocusGames() {
