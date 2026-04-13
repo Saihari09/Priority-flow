@@ -1581,6 +1581,7 @@ class FirebaseManager {
         this._unsubscribe = null;
         this._debounceTimer = null;
         this._isPulling = false;
+        this._initialSyncDone = false;
     }
 
     // ---- Replace with your own Firebase project config ----
@@ -1649,23 +1650,52 @@ class FirebaseManager {
     _setupListener() {
         if (!this._user || !this._db) return;
         this._cleanup();
+        this._initialSyncDone = false;
         this.bus.emit('sync:status', { state: 'syncing', text: 'Connecting...' });
 
         const docRef = this._db.collection('users').doc(this._user.uid).collection('data').doc('tasks');
         this._unsubscribe = docRef.onSnapshot(snap => {
+            const isFirstSync = !this._initialSyncDone;
+            this._initialSyncDone = true;
+
             if (!snap.exists) {
                 // No remote data yet — push local
                 this._push();
                 return;
             }
             const remote = snap.data();
+            const remoteTasks = remote.tasks || [];
             const remoteTs = remote.lastModified || 0;
             const localTs = this.tm.lastModified || 0;
+            const localTasks = this.tm.tasks;
 
-            if (remoteTs > localTs) {
+            if (isFirstSync && localTasks.length > 0 && remoteTasks.length > 0) {
+                // First sync on this session with data on both sides — merge
+                this._isPulling = true;
+                const merged = this._mergeTasks(localTasks, remoteTasks);
+                this.tm.setTasks(merged);
+                const ts = Math.max(remoteTs, localTs, Date.now());
+                this.tm.lastModified = ts;
+                this.store.set('pf.tasks', this.tm.tasks);
+                this.store.set('pf.lastModified', ts);
+                this.bus.emit('tasks:changed');
+                this._isPulling = false;
+                this._push();
+                this.bus.emit('sync:status', { state: 'connected', text: 'Merged' });
+            } else if (isFirstSync && localTasks.length === 0 && remoteTasks.length > 0) {
+                // Fresh device — pull remote
+                this._isPulling = true;
+                this.tm.setTasks(remoteTasks);
+                this.tm.lastModified = remoteTs;
+                this.store.set('pf.tasks', this.tm.tasks);
+                this.store.set('pf.lastModified', remoteTs);
+                this.bus.emit('tasks:changed');
+                this._isPulling = false;
+                this.bus.emit('sync:status', { state: 'connected', text: 'Pulled' });
+            } else if (remoteTs > localTs) {
                 // Remote is newer — pull
                 this._isPulling = true;
-                this.tm.setTasks(remote.tasks || []);
+                this.tm.setTasks(remoteTasks);
                 this.tm.lastModified = remoteTs;
                 this.store.set('pf.tasks', this.tm.tasks);
                 this.store.set('pf.lastModified', remoteTs);
@@ -1684,9 +1714,31 @@ class FirebaseManager {
         });
     }
 
+    _mergeTasks(localTasks, remoteTasks) {
+        const map = new Map();
+        // Add remote tasks first
+        for (const t of remoteTasks) map.set(t.id, t);
+        // Local tasks override remote if they exist, otherwise add
+        for (const t of localTasks) {
+            const existing = map.get(t.id);
+            if (!existing) {
+                map.set(t.id, t);
+            } else {
+                // Keep whichever was modified more recently (use updatedAt or completedAt)
+                const localTime = t.updatedAt || t.completedAt || t.createdAt || '';
+                const remoteTime = existing.updatedAt || existing.completedAt || existing.createdAt || '';
+                if (localTime >= remoteTime) {
+                    map.set(t.id, t);
+                }
+            }
+        }
+        return Array.from(map.values());
+    }
+
     _cleanup() {
         if (this._unsubscribe) { this._unsubscribe(); this._unsubscribe = null; }
         clearTimeout(this._debounceTimer);
+        this._initialSyncDone = false;
     }
 
     async _push() {
@@ -1708,7 +1760,7 @@ class FirebaseManager {
     }
 
     syncDebounced() {
-        if (this._isPulling) return;
+        if (this._isPulling || !this._initialSyncDone) return;
         clearTimeout(this._debounceTimer);
         this._debounceTimer = setTimeout(() => this._push().catch(() => {}), 3000);
     }
