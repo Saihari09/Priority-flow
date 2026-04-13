@@ -582,17 +582,34 @@ a { color: var(--c-primary); text-decoration: none; }
 .focus-mode-bar__exit:hover { opacity: 1; }
 
 /* ============= BRAIN DUMP ============= */
-.brain-dump { margin-bottom: 0.75rem; animation: fadeIn 0.3s ease; }
-.brain-dump__input {
-    width: 100%; padding: 0.6rem 0.85rem; border: 2px solid var(--c-primary); border-radius: var(--radius);
-    background: var(--c-surface); font: inherit; font-size: 0.95rem; color: var(--c-text);
-    outline: none; transition: var(--transition);
+.brain-dump { margin-bottom: 0.75rem; animation: fadeIn 0.3s ease; background: var(--c-surface); border-radius: var(--radius); border: 2px solid var(--c-primary); padding: 0.75rem; }
+.brain-dump__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.brain-dump__header span { font-weight: 700; font-size: 0.9rem; }
+.brain-dump__textarea {
+    width: 100%; min-height: 120px; padding: 0.6rem 0.85rem; border: 1.5px solid var(--c-border); border-radius: var(--radius);
+    background: var(--c-bg); font: inherit; font-size: 0.85rem; color: var(--c-text); resize: vertical;
+    outline: none; transition: var(--transition); line-height: 1.6;
 }
-.brain-dump__input:focus { box-shadow: 0 0 0 3px var(--c-primary-bg); }
-.brain-dump__hint { font-size: 0.72rem; color: var(--c-text-muted); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.5rem; }
-.brain-dump__count { font-weight: 700; color: var(--c-primary); }
-.brain-dump__close { font-size: 0.72rem; color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-family: inherit; margin-left: auto; }
+.brain-dump__textarea:focus { box-shadow: 0 0 0 3px var(--c-primary-bg); border-color: var(--c-primary); }
+.brain-dump__textarea::placeholder { color: var(--c-text-muted); }
+.brain-dump__hint { font-size: 0.72rem; color: var(--c-text-muted); margin-top: 0.35rem; }
+.brain-dump__actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+.brain-dump__actions .btn { flex: 1; font-size: 0.82rem; padding: 0.5rem; }
+.brain-dump__close { font-size: 0.72rem; color: var(--c-text-muted); cursor: pointer; background: none; border: none; font-family: inherit; }
 .brain-dump__close:hover { color: var(--c-text); }
+.bd-results { margin-top: 0.75rem; animation: fadeIn 0.3s ease; }
+.bd-results__title { font-weight: 700; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--c-primary); }
+.bd-plan { font-size: 0.8rem; color: var(--c-text-muted); margin-bottom: 0.6rem; line-height: 1.5; }
+.bd-task { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem; background: var(--c-bg); border-radius: var(--radius); margin-bottom: 0.35rem; border-left: 3px solid var(--c-primary); }
+.bd-task--high { border-left-color: var(--c-danger); }
+.bd-task--medium { border-left-color: var(--c-warning); }
+.bd-task--low { border-left-color: var(--c-success); }
+.bd-task__order { font-weight: 800; font-size: 0.85rem; color: var(--c-primary); min-width: 1.5rem; text-align: center; padding-top: 0.1rem; }
+.bd-task__info { flex: 1; }
+.bd-task__name { font-weight: 600; font-size: 0.82rem; }
+.bd-task__meta { font-size: 0.7rem; color: var(--c-text-muted); margin-top: 0.15rem; }
+.bd-task__remove { background: none; border: none; color: var(--c-text-muted); cursor: pointer; font-size: 0.8rem; padding: 0.1rem 0.3rem; }
+.bd-task__remove:hover { color: var(--c-danger); }
 
 /* ============= BAD DAY MODE ============= */
 .bad-day-banner {
@@ -4455,30 +4472,23 @@ class PriorityFlowApp {
         el.innerHTML = `<div class="brain-dump" id="brainDumpWidget" style="display:none">
             <div class="brain-dump__header">
                 <span>&#129504; Brain Dump</span>
-                <span class="brain-dump__count" id="bdCount">0 added</span>
-                <button class="btn btn--ghost btn--sm" id="bdClose">&times;</button>
+                <button class="brain-dump__close" id="bdClose">&times;</button>
             </div>
-            <input class="brain-dump__input" id="bdInput" type="text" placeholder="Type a task and hit Enter... keep going!" autocomplete="off">
+            <textarea class="brain-dump__textarea" id="bdInput" placeholder="Dump everything on your mind here...\n\nOne task per line, e.g.:\nFinish report for Monday\nBuy groceries\nCall dentist\nStudy for exam\nClean the kitchen\nEmail boss about project"></textarea>
+            <div class="brain-dump__hint">Tip: Add keywords like "urgent", "tomorrow", "quick" — the organizer picks them up.</div>
+            <div class="brain-dump__actions">
+                <button class="btn btn--ghost" id="bdClear">Clear</button>
+                <button class="btn btn--primary" id="bdOrganize">&#9889; Organize My Day</button>
+            </div>
+            <div id="bdResults"></div>
         </div>`;
 
-        const widget = el.querySelector('#brainDumpWidget');
-        const input = el.querySelector('#bdInput');
-        let count = 0;
-
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && input.value.trim()) {
-                this.tm.add({ title: input.value.trim(), day: 'Backlog', urgency: 3, impact: 3, energy: 2, interest: 3 });
-                input.value = '';
-                count++;
-                el.querySelector('#bdCount').textContent = `${count} added`;
-                this.motivational.toast(`+1 captured!`, 'success');
-            }
+        el.querySelector('#bdClose').addEventListener('click', () => this._toggleBrainDump());
+        el.querySelector('#bdClear').addEventListener('click', () => {
+            el.querySelector('#bdInput').value = '';
+            el.querySelector('#bdResults').innerHTML = '';
         });
-        el.querySelector('#bdClose').addEventListener('click', () => {
-            widget.style.display = 'none';
-            if (count > 0) this.motivational.toast(`${count} tasks captured! Now prioritize them.`, 'success');
-            count = 0;
-        });
+        el.querySelector('#bdOrganize').addEventListener('click', () => this._organizeBrainDump());
     }
 
     _toggleBrainDump() {
@@ -4488,6 +4498,141 @@ class PriorityFlowApp {
         widget.style.display = show ? 'block' : 'none';
         if (show) document.getElementById('bdInput').focus();
     }
+
+    _organizeBrainDump() {
+        const raw = document.getElementById('bdInput').value.trim();
+        if (!raw) { this.motivational.toast('Type some tasks first!', 'info'); return; }
+
+        const lines = raw.split(/\n|,/).map(l => l.trim()).filter(l => l.length > 1);
+        if (lines.length === 0) { this.motivational.toast('No tasks found — try one per line.', 'info'); return; }
+
+        // Keyword-based smart analysis
+        const urgentWords = /\b(urgent|asap|emergency|critical|deadline|due|overdue|immediately|right away)\b/i;
+        const highWords = /\b(important|must|need|required|submit|presentation|exam|meeting|appointment|interview|doctor|dentist|boss|client|final)\b/i;
+        const quickWords = /\b(quick|easy|simple|fast|5.?min|small|tiny|short)\b/i;
+        const tomorrowWords = /\b(tomorrow|next day)\b/i;
+        const laterWords = /\b(sometime|eventually|maybe|someday|later|whenever|backlog|low.?priority)\b/i;
+        const categories = {
+            work: /\b(work|office|meeting|email|report|project|boss|client|presentation|deadline|submit|proposal|invoice|budget)\b/i,
+            study: /\b(study|exam|homework|assignment|class|lecture|research|paper|essay|thesis|quiz|read chapter)\b/i,
+            health: /\b(doctor|dentist|gym|exercise|workout|run|walk|meditat|yoga|health|appointment|therapy|medicine|prescription)\b/i,
+            errands: /\b(buy|groceries|store|shop|pick up|drop off|return|mail|post|bank|pharmacy|laundry|clean|dishes|cook|trash)\b/i,
+            personal: /\b(call|text|email|friend|family|birthday|gift|plan|organize|journal|hobby)\b/i
+        };
+        const energyMap = { work: 3, study: 4, health: 2, errands: 1, personal: 2 };
+        const durationMap = { work: 30, study: 45, health: 30, errands: 15, personal: 15 };
+
+        const analyzed = lines.map(line => {
+            // Strip leading bullets/numbers
+            const title = line.replace(/^[\d\.\-\*\•\–\—\>\]\)\s]+/, '').trim();
+            if (!title) return null;
+
+            let urgency = 3, impact = 3, energy = 2, interest = 3, day = 'Today';
+            let cat = 'Uncategorized', duration = 20, flags = [];
+
+            // Detect category
+            for (const [c, rx] of Object.entries(categories)) {
+                if (rx.test(title)) { cat = c.charAt(0).toUpperCase() + c.slice(1); energy = energyMap[c] || 2; duration = durationMap[c] || 20; break; }
+            }
+
+            // Urgency/priority signals
+            if (urgentWords.test(title)) { urgency = 5; impact = 5; flags.push('urgent'); }
+            else if (highWords.test(title)) { urgency = 4; impact = 4; flags.push('important'); }
+            if (quickWords.test(title)) { duration = 5; energy = 1; flags.push('quick win'); }
+            if (tomorrowWords.test(title)) { day = 'Tomorrow'; }
+            if (laterWords.test(title)) { day = 'Backlog'; urgency = 1; flags.push('no rush'); }
+
+            // Priority score for sorting
+            const score = (urgency * 2) + impact + (day === 'Today' ? 3 : 0) + (duration <= 10 ? 2 : 0);
+
+            return { title, urgency, impact, energy, interest, day, cat, duration, flags, score };
+        }).filter(Boolean);
+
+        // Sort: today first, then by score descending, quick wins bubbled up early
+        analyzed.sort((a, b) => {
+            if (a.day === 'Today' && b.day !== 'Today') return -1;
+            if (b.day === 'Today' && a.day !== 'Today') return 1;
+            // Eat-the-frog: put hardest high-priority first, but slot one quick win at #2 if available
+            return b.score - a.score;
+        });
+
+        // Slot a quick win early (position 2) if the top items are all heavy
+        const qwIdx = analyzed.findIndex((t, i) => i > 0 && t.flags.includes('quick win') && t.day === 'Today');
+        if (qwIdx > 2 && analyzed.length > 2) {
+            const [qw] = analyzed.splice(qwIdx, 1);
+            analyzed.splice(1, 0, qw);
+        }
+
+        // Calculate time totals
+        const todayTasks = analyzed.filter(t => t.day === 'Today');
+        const totalMin = todayTasks.reduce((s, t) => s + t.duration, 0);
+        const hours = Math.floor(totalMin / 60);
+        const mins = totalMin % 60;
+
+        // Build results HTML
+        const resultsEl = document.getElementById('bdResults');
+        let html = `<div class="bd-results">`;
+        html += `<div class="bd-results__title">&#128640; Your Organized Plan</div>`;
+        html += `<div class="bd-plan">`;
+        html += `<strong>${todayTasks.length}</strong> tasks for today (~${hours > 0 ? hours + 'h ' : ''}${mins}m)`;
+        if (analyzed.length > todayTasks.length) html += ` &middot; ${analyzed.length - todayTasks.length} for later`;
+        html += `</div>`;
+
+        analyzed.forEach((t, i) => {
+            const level = t.urgency >= 4 ? 'high' : t.urgency >= 3 ? 'medium' : 'low';
+            const meta = [t.cat, t.duration + 'm', t.day];
+            if (t.flags.length) meta.push(t.flags.join(', '));
+            html += `<div class="bd-task bd-task--${level}" data-idx="${i}">
+                <div class="bd-task__order">${i + 1}</div>
+                <div class="bd-task__info">
+                    <div class="bd-task__name">${esc(t.title)}</div>
+                    <div class="bd-task__meta">${meta.join(' · ')}</div>
+                </div>
+                <button class="bd-task__remove" data-idx="${i}" title="Remove">&times;</button>
+            </div>`;
+        });
+
+        html += `<div class="brain-dump__actions" style="margin-top:0.75rem">
+            <button class="btn btn--ghost" id="bdBack">&#9998; Edit</button>
+            <button class="btn btn--primary" id="bdAddAll">&#10003; Add All Tasks</button>
+        </div>`;
+        html += `</div>`;
+        resultsEl.innerHTML = html;
+
+        // Store analyzed tasks for adding
+        this._bdAnalyzed = analyzed;
+
+        // Event delegation on results container
+        resultsEl.onclick = (e) => {
+            const rmBtn = e.target.closest('.bd-task__remove');
+            if (rmBtn) {
+                const idx = parseInt(rmBtn.dataset.idx);
+                rmBtn.closest('.bd-task').remove();
+                this._bdAnalyzed[idx] = null;
+                return;
+            }
+            if (e.target.closest('#bdBack')) {
+                resultsEl.innerHTML = '';
+                return;
+            }
+            if (e.target.closest('#bdAddAll')) {
+                const tasks = this._bdAnalyzed.filter(Boolean);
+                tasks.forEach(t => {
+                    this.tm.create({
+                        title: t.title, day: t.day, urgency: t.urgency, impact: t.impact,
+                        energy: t.energy, interest: t.interest, category: t.cat, duration: t.duration
+                    });
+                });
+                document.getElementById('bdInput').value = '';
+                resultsEl.innerHTML = '';
+                resultsEl.onclick = null;
+                this._toggleBrainDump();
+                this._renderAll();
+                this.motivational.toast(`${tasks.length} tasks organized and added! Let's go!`, 'success');
+            }
+        };
+    }
+
 
     _updateUserUI() {
         const name = this.sync.displayName;
