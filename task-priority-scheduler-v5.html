@@ -2293,6 +2293,11 @@
                 this.loadSettings();
                 this.loadTasks();
                 this.seedWeek();
+                // Self-heal: clear a protected date that has no tasks (would blank the app).
+                if (this.settings.protectedDate && !this.tasks.some(t => t.calendarDate === this.settings.protectedDate)) {
+                    this.settings.protectedDate = null;
+                    this.saveSettings();
+                }
                 this.setupTheme();
                 this.setupEventListeners();
                 this.initSync();
@@ -2557,6 +2562,60 @@
                 return `<span class="badge badge-time">🕒 ${task.startTime}${end}</span>`;
             }
 
+            hmToMin(hm) { const [h, m] = hm.split(':').map(Number); return h * 60 + m; }
+            minToHM(v) {
+                const h = Math.floor(v / 60), m = Math.round(v % 60);
+                return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            }
+
+            // Build a chronological planner timeline: fixed/timed tasks stay at their clock
+            // time (anchors); untimed tasks flow into the gaps around them with a suggested
+            // time. Rewards without a time stay loose at the end. Does not mutate tasks.
+            buildTimeline(active, tasks) {
+                const DAY_START = 9 * 60, DAY_END = 22 * 60;
+                const timed = [], flex = [], loose = [];
+
+                tasks.forEach(t => {
+                    if (t.startTime) {
+                        const s = this.hmToMin(t.startTime);
+                        const e = t.endTime ? this.hmToMin(t.endTime) : s + (t.duration || 30);
+                        timed.push({ task: t, start: s, end: e, suggested: false });
+                    } else if (t.taskType === 'reward') {
+                        loose.push({ task: t, start: null, end: null, suggested: false });
+                    } else {
+                        flex.push(t);
+                    }
+                });
+
+                timed.sort((a, b) => a.start - b.start);
+                flex.sort((a, b) => this.calculateScore(b) - this.calculateScore(a));
+
+                // Start filling from the day's start, or "now" if the active day is today.
+                let cursor = DAY_START;
+                if (active === this.todayISO()) {
+                    const now = new Date();
+                    cursor = Math.max(cursor, now.getHours() * 60 + Math.ceil(now.getMinutes() / 15) * 15);
+                }
+
+                const occupied = timed.map(x => [x.start, x.end]);
+                const scheduled = [];
+                flex.forEach(t => {
+                    const dur = t.duration || 30;
+                    let guard = 0;
+                    // Jump the cursor past any anchor that overlaps the proposed slot.
+                    while (guard++ < 200) {
+                        const clash = occupied.find(([s, e]) => cursor < e && (cursor + dur) > s);
+                        if (clash) cursor = clash[1]; else break;
+                    }
+                    const s = cursor, e = cursor + dur;
+                    scheduled.push({ task: t, start: s, end: e, suggested: true });
+                    occupied.push([s, e]);
+                    cursor = e;
+                });
+
+                return [...timed, ...scheduled].sort((a, b) => a.start - b.start).concat(loose);
+            }
+
             getQuadrant(task) {
                 const urgent = task.urgency >= 2;
                 const important = task.impact >= 2;
@@ -2583,12 +2642,13 @@
                 let filtered = this.tasks;
 
                 // Protect-this-day: hide everything except the protected date's essentials
-                // (boss battles + fixed anchors). Zero noise on lab days.
+                // (boss battles + fixed anchors). Zero noise on lab days. Falls back to the
+                // day's full task list if it has no boss/fixed anchors, so protect never
+                // blanks the whole app or traps the user.
                 if (this.settings.protectedDate) {
-                    return this.tasks.filter(t =>
-                        t.calendarDate === this.settings.protectedDate &&
-                        (t.taskType === 'boss' || t.taskType === 'fixed')
-                    );
+                    const dayTasks = this.tasks.filter(t => t.calendarDate === this.settings.protectedDate);
+                    const essentials = dayTasks.filter(t => t.taskType === 'boss' || t.taskType === 'fixed');
+                    return essentials.length ? essentials : dayTasks;
                 }
 
                 if (this.searchFilter === 'High') {
@@ -3006,6 +3066,14 @@
             }
 
             setProtectedDate(dateISO) {
+                // Never protect a day with no tasks — that would blank every view.
+                if (dateISO) {
+                    const dayTasks = this.tasks.filter(t => t.calendarDate === dateISO);
+                    if (dayTasks.length === 0) {
+                        this.toast(`Nothing scheduled on ${this.formatDayLabel(dateISO)} to protect.`);
+                        return;
+                    }
+                }
                 this.settings.protectedDate = dateISO;
                 this.saveSettings();
                 if (dateISO) this.plannerDate = dateISO;
@@ -3197,9 +3265,9 @@
                 }
                 const active = this.plannerDate;
 
-                // ---- Week strip ----
+                // ---- Week strip ---- (planner is the schedule: calendar-dated tasks only)
                 const strip = dates.map(d => {
-                    const dayTasks = this.tasksForDate(d, d === today);
+                    const dayTasks = this.tasksForDate(d, false);
                     const doneN = dayTasks.filter(t => t.done).length;
                     const cls = [
                         'day-pill',
@@ -3220,40 +3288,42 @@
                 }).join('');
 
                 // ---- Day header (title + progress + protect toggle) ----
-                const dayTasks = this.tasksForDate(active, active === today);
+                const dayTasks = this.tasksForDate(active, false);
                 const workTasks = dayTasks.filter(t => t.taskType !== 'reward');
                 const totalXP = workTasks.reduce((s, t) => s + this.taskXP(t), 0);
                 const earnedXP = workTasks.filter(t => t.done).reduce((s, t) => s + this.taskXP(t), 0);
                 const pct = totalXP > 0 ? Math.round((earnedXP / totalXP) * 100) : 0;
                 const isProtected = this.settings.protectedDate === active;
 
-                // Sort: timed tasks by start time first, then flexible tasks by score.
-                const sorted = [...dayTasks].sort((a, b) => {
-                    if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
-                    if (a.startTime) return -1;
-                    if (b.startTime) return 1;
-                    return this.calculateScore(b) - this.calculateScore(a);
-                });
+                // Build the timeline: fixed anchors sit at their clock time; untimed tasks
+                // flow into the gaps around them (feature: fixed events + flexible tasks).
+                const source = isProtected
+                    ? dayTasks.filter(t => t.taskType === 'boss' || t.taskType === 'fixed')
+                    : dayTasks;
+                const entries = this.buildTimeline(active, source);
 
-                const visible = isProtected
-                    ? sorted.filter(t => t.taskType === 'boss' || t.taskType === 'fixed')
-                    : sorted;
+                const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
 
-                const nowHM = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
-
-                const slots = visible.map(task => {
+                const slots = entries.map(entry => {
+                    const task = entry.task;
                     const meta = this.typeMeta(task);
                     const isAnchor = task.taskType === 'fixed';
                     const isReward = task.taskType === 'reward';
                     const rs = this.rewardStatus(task);
 
-                    const timeCol = task.startTime
-                        ? `${task.startTime}${task.endTime ? `<br><span style="font-size:0.75rem;opacity:0.6">to ${task.endTime}</span>` : ''}`
-                        : `<span class="slot-flex-label">flexible</span>`;
+                    let timeCol;
+                    if (entry.start == null) {
+                        timeCol = `<span class="slot-flex-label">flexible</span>`;
+                    } else {
+                        const tilde = entry.suggested ? '~' : '';
+                        const endLine = entry.end != null ? `<br><span style="font-size:0.75rem;opacity:0.6">to ${this.minToHM(entry.end)}</span>` : '';
+                        const hint = entry.suggested ? `<br><span class="slot-flex-label">suggested</span>` : '';
+                        timeCol = `${tilde}${this.minToHM(entry.start)}${endLine}${hint}`;
+                    }
 
                     // Highlight the current live slot on today.
-                    const isCurrent = active === today && task.startTime && task.endTime &&
-                        nowHM >= task.startTime && nowHM < task.endTime && !task.done;
+                    const isCurrent = active === today && entry.start != null && entry.end != null &&
+                        nowMin >= entry.start && nowMin < entry.end && !task.done;
 
                     const slotClasses = [
                         'planner-slot',
@@ -3643,10 +3713,12 @@
                 // Reward picker toggles with the Type field.
                 document.getElementById('taskTypeSelect').addEventListener('change', () => this.updateUnlockPicker());
 
-                // Protect-day: topbar toggle protects/unprotects today.
+                // Protect-day: topbar toggle. Protects the day you're viewing in the
+                // Planner (else today); toggles off if already protecting.
                 document.getElementById('protectTodayBtn').addEventListener('click', () => {
-                    const today = this.todayISO();
-                    this.setProtectedDate(this.settings.protectedDate ? null : today);
+                    if (this.settings.protectedDate) { this.setProtectedDate(null); return; }
+                    const target = (this.currentView === 'planner' && this.plannerDate) ? this.plannerDate : this.todayISO();
+                    this.setProtectedDate(target);
                 });
                 document.getElementById('exitProtectBtn').addEventListener('click', () => this.setProtectedDate(null));
 
