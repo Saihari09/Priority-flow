@@ -2564,15 +2564,42 @@
 
             hmToMin(hm) { const [h, m] = hm.split(':').map(Number); return h * 60 + m; }
             minToHM(v) {
-                const h = Math.floor(v / 60), m = Math.round(v % 60);
+                const h = Math.floor(v / 60) % 24, m = Math.round(v % 60);
                 return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
             }
 
-            // Build a chronological planner timeline: fixed/timed tasks stay at their clock
-            // time (anchors); untimed tasks flow into the gaps around them with a suggested
-            // time. Rewards without a time stay loose at the end. Does not mutate tasks.
+            // Build a chronological planner timeline.
+            // For TODAY: every task is laid out back-to-back starting from the current time,
+            // so the plan is always "start now" and nothing sits in the past.
+            // For other days: fixed/timed tasks stay at their clock time (anchors) and untimed
+            // tasks flow into the gaps around them. Does not mutate tasks.
             buildTimeline(active, tasks) {
                 const DAY_START = 9 * 60, DAY_END = 22 * 60;
+
+                // ---- Today: reflow everything from the current time ----
+                if (active === this.todayISO()) {
+                    const now = new Date();
+                    let cursor = now.getHours() * 60 + now.getMinutes();
+
+                    // Order: timed tasks by their original time, then untimed by score,
+                    // with rewards last so the prize sits at the end of the run.
+                    const ordered = [...tasks].sort((a, b) => {
+                        const ar = a.taskType === 'reward', br = b.taskType === 'reward';
+                        if (ar !== br) return ar ? 1 : -1;
+                        if (a.startTime && b.startTime) return this.hmToMin(a.startTime) - this.hmToMin(b.startTime);
+                        if (a.startTime) return -1;
+                        if (b.startTime) return 1;
+                        return this.calculateScore(b) - this.calculateScore(a);
+                    });
+
+                    return ordered.map(t => {
+                        const dur = t.duration || 30;
+                        const s = cursor, e = cursor + dur;
+                        cursor = e;
+                        return { task: t, start: s, end: e, suggested: false };
+                    });
+                }
+
                 const timed = [], flex = [], loose = [];
 
                 tasks.forEach(t => {
